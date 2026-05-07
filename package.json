@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "private": true,
+  "license": "OSL 3.0",
+  "type": "module",
+  "main": "main.js",
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
