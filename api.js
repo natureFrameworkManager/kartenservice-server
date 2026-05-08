@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import {JSDOM} from 'jsdom';
-import { insertOpenMensaMeals } from './db.js';
+import { getOpenMensaDays, insertOpenMensaMeals, getOpenMensaMeals as getDBOpenMensaMeals } from './db.js';
 dotenv.config({ quiet: true });
 
 const baseUrl = process.env.BASE_URL;
@@ -268,11 +268,9 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
 }
 
 export async function getOpenMensaMeals(canteenId, date) {
-    const cacheKey = `${canteenId}_${date}`;
-    const cachedData = await readCache(openMensaCacheFile, cacheKey);
-    if (cachedData) {
+    const cachedData = getDBOpenMensaMeals(canteenId, new Date(date));
+    if (cachedData && cachedData.length > 0 && new Date(date) <= new Date(new Date().toISOString().split('T')[0])) {
         console.log(`Cache hit for canteen ${canteenId} on date ${date}`);
-        insertOpenMensaMeals(cachedData, canteenId, date);
         return cachedData;
     }
     const response = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days/${date}/meals`, {
@@ -305,23 +303,20 @@ export async function getOpenMensaMeals(canteenId, date) {
         const pageData = await pageResponse.json();
         allData = allData.concat(pageData);
     }
-    // Dont cache for today and future dates, as they can change frequently
-    const today = new Date();
-    const mealDate = new Date(date);
-    if (mealDate >= today) {
-        return allData;
-    }
-    await writeCache(openMensaCacheFile, cacheKey, allData);
     insertOpenMensaMeals(allData, canteenId, date);
     return allData;
 }
 
 export async function getAllOpenMensaMeals(canteenId, startDate) {
-    const canteenDays = await getOpenMensaCanteenDays(canteenId, startDate);
+    let canteenDays = await getOpenMensaCanteenDays(canteenId, startDate);
+    canteenDays = canteenDays.filter(day => day.closed === false); // Filter out closed days
+    var cachedDays = getOpenMensaDays(canteenId, startDate);
+    cachedDays = cachedDays.filter(days => days.getTime() < new Date(new Date().setHours(0, 0, 0, 0)).getTime()); // Filter out today and future days
+    canteenDays = canteenDays.filter(day => !cachedDays.some(cachedDay => cachedDay.getTime() === new Date(day.date).getTime())); // Filter out days that are already cached
+    console.log(`Fetching meals for dates ${canteenDays.sort((a, b) => new Date(a.date) - new Date(b.date)).map(day => day.date).join(', ')} for canteen ${canteenId}`);
     let allMeals = [];
     for (const day of canteenDays) {
         const meals = await getOpenMensaMeals(canteenId, day.date);
-        console.log(`Fetched ${meals.length} meals for canteen ${canteenId} on date ${day.date}, day progress: ${canteenDays.indexOf(day) + 1}/${canteenDays.length}`);
         allMeals = allMeals.concat(meals);
         await new Promise(resolve => setTimeout(resolve, 100)); // wait 100ms between requests to avoid hitting rate limits
     }

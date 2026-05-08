@@ -81,16 +81,52 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_mensa_xml_cache_internalCategory ON mensa_xml_cache (internalCategory);
 `);
 
+/**
+ * 
+ * @param {String} cardnumber 
+ * @param {String} passwort
+ * @return {void} 
+ */
 export function insertCard(cardnumber, passwort) {
     const stmt = db.prepare('INSERT OR IGNORE INTO cards (cardnumber, passwort) VALUES (?, ?)');
     stmt.run(cardnumber, passwort);
 }
 
-export function getCard(cardnumber) {
-    const stmt = db.prepare('SELECT * FROM cards WHERE cardnumber = ?');
-    return stmt.get(cardnumber);
+/**
+ * 
+ * @returns {{id: number, cardnumber: string, password: string}[]}
+ */
+export function getCards() {
+    const stmt = db.prepare('SELECT * FROM cards');
+    var results = stmt.all();
+    return results.map(r => ({
+        id: r.id,
+        cardnumber: r.cardnumber,
+        password: r.passwort
+    }));
 }
 
+/**
+ * 
+ * @param {String} cardnumber 
+ * @returns {{id: number, cardnumber: string, password: string} | null}
+ */
+export function getCard(cardnumber) {
+    const stmt = db.prepare('SELECT * FROM cards WHERE cardnumber = ?');
+    var result = stmt.get(cardnumber);
+    return result ? {
+        id: result.id,
+        cardnumber: result.cardnumber,
+        password: result.passwort
+    } : null;
+}
+
+/**
+ * 
+ * @param {{mandantId: number, transFullId: string, datum: string, ortName: string, kaName: string, typName: string, zahlBetrag: number, dateiablageId: number|null, bonusInfo: string|null}[]} transList 
+ * @param {String} cardnumber 
+ * @return {void}
+ */
 export function insertTransList(transList, cardnumber) {
     const stmt = db.prepare(`
         INSERT OR IGNORE INTO trans (mandantId, transFullId, datum, ortName, kaName, typName, zahlBetrag, dateiablageId, bonusInfo, cardnumber)
@@ -115,6 +151,34 @@ export function insertTransList(transList, cardnumber) {
     }
 }
 
+/**
+ * 
+ * @param {String} cardnumber 
+ * @returns {{id: number, mandantId: number, transFullId: string, datum: Date, ortName: string, kaName: string, typName: string, zahlBetrag: number, dateiablageId: number|null, bonusInfo: string|null, cardnumber: string}[]}
+ */
+export function getTransList(cardnumber) {
+    if (!cardnumber) {
+        var stmt = db.prepare('SELECT * FROM trans');
+        var results = stmt.all();
+    } else {
+        var stmt = db.prepare('SELECT * FROM trans WHERE cardnumber = ?');
+    var results = stmt.all(cardnumber);
+    }
+    return results.map(r => ({
+        id: r.id,
+        mandantId: r.mandantId,
+        transFullId: r.transFullId,
+        datum: new Date(r.datum),
+        ortName: r.ortName,
+        kaName: r.kaName,
+        typName: r.typName,
+        zahlBetrag: r.zahlBetrag,
+        dateiablageId: r.dateiablageId ? r.dateiablageId : null,
+        bonusInfo: r.bonusInfo ? r.bonusInfo : null,
+        cardnumber: r.cardnumber
+    }));
+}
+
 export function insertTransPosList(transPosList, cardnumber) {
     const stmt = db.prepare(`
         INSERT OR IGNORE INTO transpos (mandantId, transFullId, posId, name, menge, epreis, rabatt, gpreis, bewertung, cardnumber)
@@ -136,6 +200,43 @@ export function insertTransPosList(transPosList, cardnumber) {
     }
 }
 
+/**
+ * @typedef {Object} TransPos
+ * @property {number} id
+ * @property {number} mandantId
+ * @property {string} transFullId
+ * @property {number} posId
+ * @property {string} name
+ * @property {number} menge
+ * @property {number} epreis
+ * @property {number|null} rabatt
+ * @property {number} gpreis
+ * @property {number|null} bewertung
+ * @property {string} cardnumber
+ */
+export function getTransPosList(cardnumber) {
+    if (!cardnumber) {
+        var stmt = db.prepare('SELECT * FROM transpos');
+        var results = stmt.all();
+    } else {
+        var stmt = db.prepare('SELECT * FROM transpos WHERE cardnumber = ?');
+        var results = stmt.all(cardnumber);
+    }
+    return results.map(r => ({
+        id: r.id,
+        mandantId: r.mandantId,
+        transFullId: r.transFullId,
+        posId: r.posId,
+        name: r.name,
+        menge: r.menge,
+        epreis: r.epreis,
+        rabatt: r.rabatt,
+        gpreis: r.gpreis,
+        bewertung: r.bewertung,
+        cardnumber: r.cardnumber
+    }));
+}
+
 export function insertOpenMensaMeals(meals, canteenId, date) {
     // parse date yyyy-mm-dd to timestamp
     var date = new Date(date);
@@ -155,6 +256,32 @@ export function insertOpenMensaMeals(meals, canteenId, date) {
     }
 }
 
+export function getOpenMensaDays(canteenId, startDate = null) {
+    var startDate = startDate ? new Date(startDate) : new Date();
+    const stmt = db.prepare('SELECT DISTINCT date FROM openmensa_meals WHERE canteenId = ? AND date >= ?');
+    var results = stmt.all(canteenId, startDate.getTime());
+    return results.map(r => new Date(r.date));
+}
+
+export function getOpenMensaMeals(canteenId, date) {
+    var date = new Date(date);
+    const stmt = db.prepare('SELECT * FROM openmensa_meals WHERE canteenId = ? AND date = ?');
+    var results = stmt.all(canteenId, date.getTime());
+    if (results.length > 0) {
+        return results.map(r => ({
+            id: r.id,
+            name: r.name,
+            notes: r.notes ? JSON.parse(r.notes) : null,
+            prices: r.prices ? JSON.parse(r.prices) : null,
+            category: r.category,
+            date: new Date(r.date),
+            canteenId: r.canteenId
+        }));
+    } else {
+        return [];
+    }
+}
+
 export function insertMensaXMLMeals(meals) {
     const stmt = db.prepare(`
         INSERT OR IGNORE INTO mensa_xml_cache (locationId, date, name, category, internalCategory, prices, components, tags)
@@ -171,5 +298,26 @@ export function insertMensaXMLMeals(meals) {
             meal.components ? JSON.stringify(meal.components) : null,
             meal.tags ? JSON.stringify(meal.tags) : null
         );
+    }
+}
+
+export function getMensaXMLMeals(canteenId, date) {
+    var date = new Date(date);
+    const stmt = db.prepare('SELECT * FROM mensa_xml_cache WHERE locationId = ? AND date = ?');
+    var results = stmt.all(canteenId, date.getTime());
+    if (results.length > 0) {
+        return results.map(r => ({
+            id: r.id,
+            locationId: r.locationId,
+            date: new Date(r.date),
+            name: r.name,
+            category: r.category,
+            internalCategory: r.internalCategory,
+            prices: r.prices ? JSON.parse(r.prices) : null,
+            components: r.components ? JSON.parse(r.components) : null,
+            tags: r.tags ? JSON.parse(r.tags) : null
+        }));
+    } else {
+        return [];
     }
 }
