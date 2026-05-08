@@ -119,6 +119,21 @@ export async function insertCard(cardnumber, passwort) {
     }
 }
 
+export async function updateCard(cardnumber, newPassword) {
+    await client.secrets().updateSecret(cardnumber, {
+        environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+        projectId: process.env.INFISICAL_PROJECT_ID,
+        secretValue: newPassword
+    });
+}
+
+export async function deleteCard(cardnumber) {
+    await client.secrets().deleteSecret(cardnumber, {
+        environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+        projectId: process.env.INFISICAL_PROJECT_ID,
+    });
+}
+
 /**
  * 
  * @returns {{id: number, cardnumber: string, password: string}[]}
@@ -301,6 +316,20 @@ export function getOpenMensaDays(canteenId, startDate = null) {
     return results.map(r => new Date(r.date));
 }
 
+export function getAllOpenMensaMeals() {
+    const stmt = db.prepare('SELECT * FROM openmensa_meals');
+    const results = stmt.all();
+    return results.map(r => ({
+        id: r.id,
+        name: r.name,
+        notes: r.notes ? JSON.parse(r.notes) : null,
+        prices: r.prices ? JSON.parse(r.prices) : null,
+        category: r.category,
+        date: new Date(r.date),
+        canteenId: r.canteenId
+    }));
+}
+
 export function getOpenMensaMeals(canteenId, date) {
     var date = new Date(date);
     const stmt = db.prepare('SELECT * FROM openmensa_meals WHERE canteenId = ? AND date = ?');
@@ -337,6 +366,22 @@ export function insertMensaXMLMeals(meals) {
             meal.tags ? JSON.stringify(meal.tags) : null
         );
     }
+}
+
+export function getAllMensaXMLMeals() {
+    const stmt = db.prepare('SELECT * FROM mensa_xml_cache');
+    const results = stmt.all();
+    return results.map(r => ({
+        id: r.id,
+        locationId: r.locationId,
+        date: new Date(r.date),
+        name: r.name,
+        category: r.category,
+        internalCategory: r.internalCategory,
+        prices: r.prices ? JSON.parse(r.prices) : null,
+        components: r.components ? JSON.parse(r.components) : null,
+        tags: r.tags ? JSON.parse(r.tags) : null
+    }));
 }
 
 export function getMensaXMLMeals(canteenId, date) {

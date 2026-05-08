@@ -1,0 +1,713 @@
+openapi: 3.0.3
+info:
+  title: Kartenservice Server API
+  description: |
+    REST API served by kartenservice-server. Provides meal data from OpenMensa and
+    Mensa XML sources, meal lookups matched against card transaction history, and
+    card management backed by Infisical secret storage.
+
+    Authenticated endpoints use HTTP Basic Auth where the username is the card number
+    and the password is the card password stored in Infisical.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Meals
+    description: Raw meal data from external sources
+  - name: Meal Lookups
+    description: Matched meal lookups derived from transaction history
+  - name: Transactions
+    description: Card transaction and transaction position history
+  - name: Cards
+    description: Card management
+  - name: Fetch
+    description: Trigger background data fetches
+
+security: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Card number as username, card password as password
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    MensaXMLMeal:
+      type: object
+      properties:
+        id:
+          type: integer
+        locationId:
+          type: integer
+        date:
+          type: string
+          format: date-time
+        name:
+          type: string
+        category:
+          type: string
+        internalCategory:
+          type: string
+          nullable: true
+        prices:
+          $ref: '#/components/schemas/Prices'
+        components:
+          type: array
+          items:
+            type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          nullable: true
+
+    OpenMensaMeal:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        notes:
+          type: array
+          items:
+            type: string
+          nullable: true
+        prices:
+          $ref: '#/components/schemas/Prices'
+        category:
+          type: string
+        date:
+          type: string
+          format: date-time
+        canteenId:
+          type: integer
+
+    Prices:
+      type: object
+      nullable: true
+      properties:
+        students:
+          type: number
+          format: float
+          nullable: true
+        employees:
+          type: number
+          format: float
+          nullable: true
+        pupils:
+          type: number
+          format: float
+          nullable: true
+        others:
+          type: number
+          format: float
+          nullable: true
+
+    Tag:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+
+    MealLookupEntry:
+      description: |
+        Matched meal for a transaction item. Null means lookup was attempted but no
+        meal was found.
+      nullable: true
+      oneOf:
+        - $ref: '#/components/schemas/OpenMensaMeal'
+        - type: 'null'
+
+    MealLookupByMealName:
+      description: Map of meal name (e.g. "Essen A") to matched meal entry.
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/MealLookupEntry'
+
+    MealLookupByCanteen:
+      description: Map of canteen ID to meal name map.
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/MealLookupByMealName'
+
+    MealLookupByDate:
+      description: Map of date (YYYY-MM-DD) to canteen map.
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/MealLookupByCanteen'
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        mandantId:
+          type: integer
+        transFullId:
+          type: string
+        datum:
+          type: string
+          format: date-time
+        ortName:
+          type: string
+        kaName:
+          type: string
+        typName:
+          type: string
+        zahlBetrag:
+          type: number
+          format: float
+        dateiablageId:
+          type: integer
+          nullable: true
+        bonusInfo:
+          type: string
+          nullable: true
+        cardnumber:
+          type: string
+
+    TransactionPosition:
+      type: object
+      properties:
+        id:
+          type: integer
+        mandantId:
+          type: integer
+        transFullId:
+          type: string
+        posId:
+          type: integer
+        name:
+          type: string
+        menge:
+          type: integer
+        epreis:
+          type: number
+          format: float
+        rabatt:
+          type: number
+          format: float
+          nullable: true
+        gpreis:
+          type: number
+          format: float
+        bewertung:
+          type: integer
+          nullable: true
+        cardnumber:
+          type: string
+
+    CardBody:
+      type: object
+      required: [cardNumber, password]
+      properties:
+        cardNumber:
+          type: string
+          example: "123456789"
+        password:
+          type: string
+          example: "password"
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Basic Auth credentials.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated card does not match requested card number.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Requested resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequest:
+      description: Missing or invalid request body fields.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+paths:
+
+  # ---------------------------------------------------------------------------
+  # Meals
+  # ---------------------------------------------------------------------------
+
+  /meals:
+    get:
+      tags: [Meals]
+      summary: Get all combined meals
+      description: Returns all meals combined from both sources. Not yet implemented — returns a placeholder string.
+      operationId: getMeals
+      responses:
+        "200":
+          description: Placeholder response.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: meals
+
+  /meals/mensa-xml:
+    get:
+      tags: [Meals]
+      summary: Get all meals from Mensa XML
+      description: Returns all meals stored in the local Mensa XML cache.
+      operationId: getMealsMensaXml
+      responses:
+        "200":
+          description: List of Mensa XML meals.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MensaXMLMeal'
+
+  /meals/open-mensa:
+    get:
+      tags: [Meals]
+      summary: Get all meals from OpenMensa
+      description: Returns all meals stored in the local OpenMensa cache.
+      operationId: getMealsOpenMensa
+      responses:
+        "200":
+          description: List of OpenMensa meals.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpenMensaMeal'
+
+  # ---------------------------------------------------------------------------
+  # Meal Lookups
+  # ---------------------------------------------------------------------------
+
+  /meal-lookups:
+    get:
+      tags: [Meal Lookups]
+      summary: Get all meal lookups
+      description: Returns the full meal lookup map keyed by date, canteen ID, and meal name.
+      operationId: getMealLookups
+      responses:
+        "200":
+          description: Full meal lookup map.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupByDate'
+
+  /meal-lookups/{date}:
+    get:
+      tags: [Meal Lookups]
+      summary: Get meal lookup for a specific date
+      operationId: getMealLookupsByDate
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-11-12"
+      responses:
+        "200":
+          description: Canteen map for the given date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupByCanteen'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /meal-lookups/{date}/{canteenId}:
+    get:
+      tags: [Meal Lookups]
+      summary: Get meal lookup for a specific date and canteen
+      operationId: getMealLookupsByDateAndCanteen
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-11-12"
+        - name: canteenId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 63
+      responses:
+        "200":
+          description: Meal name map for the given date and canteen.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupByMealName'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /meal-lookups/{date}/{canteenId}/{mealName}:
+    get:
+      tags: [Meal Lookups]
+      summary: Get meal lookup for a specific date, canteen and meal name
+      operationId: getMealLookupsByDateCanteenAndMeal
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-11-12"
+        - name: canteenId
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 63
+        - name: mealName
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "Essen DD"
+      responses:
+        "200":
+          description: Matched meal entry (null if no match was found).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupEntry'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /meal-lookups/card/{cardNumber}:
+    get:
+      tags: [Meal Lookups]
+      summary: Get meal lookups for a specific card number
+      description: Returns meal lookup entries filtered to dates on which this card has transactions. Requires authentication as the given card.
+      operationId: getMealLookupsByCard
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cardNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        "200":
+          description: Meal lookup map filtered to this card's transaction dates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupByDate'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /meal-lookups/card/{cardNumber}/{date}:
+    get:
+      tags: [Meal Lookups]
+      summary: Get meal lookup for a specific card number and date
+      description: Returns the canteen meal map for the given date. Requires authentication as the given card.
+      operationId: getMealLookupsByCardAndDate
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cardNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123456789"
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-11-12"
+      responses:
+        "200":
+          description: Canteen map for the given date.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealLookupByCanteen'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # Transactions
+  # ---------------------------------------------------------------------------
+
+  /trans/{cardNumber}:
+    get:
+      tags: [Transactions]
+      summary: Get all transactions for a card
+      description: Returns all transactions stored locally for the given card. Requires authentication as the given card.
+      operationId: getTransactions
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cardNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        "200":
+          description: List of transactions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  /transpos/{cardNumber}:
+    get:
+      tags: [Transactions]
+      summary: Get all transaction positions for a card
+      description: Returns all transaction positions stored locally for the given card. Requires authentication as the given card.
+      operationId: getTransactionPositions
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cardNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "123456789"
+      responses:
+        "200":
+          description: List of transaction positions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TransactionPosition'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+
+  # ---------------------------------------------------------------------------
+  # Cards
+  # ---------------------------------------------------------------------------
+
+  /card:
+    post:
+      tags: [Cards]
+      summary: Add a card
+      description: |
+        Validates the card number and password against the kartenservice before
+        storing the card. Returns 409 if the card is already registered.
+      operationId: addCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardBody'
+      responses:
+        "201":
+          description: Card added successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          description: Missing fields or invalid credentials from kartenservice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "409":
+          description: Card is already registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Cards]
+      summary: Update a card password
+      description: |
+        Validates the new password against the kartenservice before updating.
+        Returns 404 if the card is not registered.
+      operationId: updateCard
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardBody'
+      responses:
+        "200":
+          description: Card password updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          description: Missing fields or invalid new credentials from kartenservice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Cards]
+      summary: Delete a card
+      description: Removes the card from Infisical. Requires authentication as the card being deleted.
+      operationId: deleteCard
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cardNumber]
+              properties:
+                cardNumber:
+                  type: string
+                  example: "123456789"
+      responses:
+        "200":
+          description: Card deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  # ---------------------------------------------------------------------------
+  # Fetch triggers
+  # ---------------------------------------------------------------------------
+
+  /fetch/open-mensa:
+    post:
+      tags: [Fetch]
+      summary: Trigger OpenMensa meal fetch
+      description: Asynchronously fetches meals from OpenMensa for all Leipzig canteens starting from 7 days ago and rebuilds the meal lookup.
+      operationId: fetchOpenMensa
+      responses:
+        "202":
+          description: Fetch triggered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /fetch/mensa-xml:
+    post:
+      tags: [Fetch]
+      summary: Trigger Mensa XML meal fetch
+      description: Asynchronously fetches meals from the Mensa XML feed for the current and previous week and rebuilds the meal lookup.
+      operationId: fetchMensaXml
+      responses:
+        "202":
+          description: Fetch triggered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /fetch/kartenservice:
+    post:
+      tags: [Fetch]
+      summary: Trigger transaction fetch for a card
+      description: |
+        Asynchronously fetches transactions and transaction positions from the
+        kartenservice for the given card and rebuilds the meal lookup.
+        Requires authentication as the given card.
+      operationId: fetchKartenservice
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cardNumber]
+              properties:
+                cardNumber:
+                  type: string
+                  example: "123456789"
+      responses:
+        "202":
+          description: Fetch triggered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
