@@ -20,6 +20,18 @@ export const ortNameOpenMensaMapping = {
     "-": 71, // Cafeteria Koburger Straße
     "-": 72, // Cafeteria Philipp-Rosenthal-Straße
 };
+export const ortNameMensaXMLMapping = {
+    "MaP Mensaküche Leitung": 106, // Mensa am Park
+    "-": 118, // Mensa Academica
+    "Mensaküche amElsterbecken": 115, // Mensa am Elsterbecken
+    "-": 170, // Mensa An den Tierkliniken
+    "PSW Mensaküche Leitung": 111, // Mensa Petersteinweg
+    "-": 162, // Mensa Liebigstraße/Mensa und Cafeteria am Medizincampus
+    "-": 140, // Mensa/Cafetaria Schönauer Straße
+    "-": 153, // Cafeteria Dittrichring
+    "-": null, // Cafeteria Koburger Straße
+    "-": 127, // Cafeteria Philipp-Rosenthal-Straße/Mensaria am Botanischen Garten
+};
 
 /**
  * @typedef {Object} Transaction
@@ -74,10 +86,40 @@ export async function expandTransactions(transactions, transactionItems) {
     fs.writeFileSync(transactionItemsFile, JSON.stringify(uniqueTransactionItems, null, 2));   
 }
 
+async function findMealOpenMensa(canteenId, date, price) {
+    let openMensaMeals = JSON.parse(fs.readFileSync(openMensaCacheFile, 'utf-8'));
+    // cacheKey is canteenId + date in format YYYY-MM-DD
+    const cacheKey = `${canteenId}_${date.toISOString().split('T')[0]}`;
+    var meals = openMensaMeals[cacheKey] || [];
+    const mealsWithPrice = meals.filter(meal => meal.prices && Object.values(meal.prices).includes(price));
+    if (mealsWithPrice.length > 0) {
+        if (mealsWithPrice.length > 1) {
+            console.warn(`Multiple meals [${mealsWithPrice.map(meal => meal.category).join(', ')}] found for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}, taking the first one`);
+        }
+        return mealsWithPrice[0];
+    } else {
+        return null;
+    }
+}
+
+async function findMealMensaXML(canteenId, date, price) {
+    let mensaXMLMeals = JSON.parse(fs.readFileSync(mensaXMLFile, 'utf-8'));
+    var meals = mensaXMLMeals.filter(meal => meal.locationId == canteenId && new Date(meal.date).getTime() === date.getTime());
+    const mealsWithPrice = meals.filter(meal => meal.prices && Object.values(meal.prices).includes(price));
+    if (mealsWithPrice.length > 0) {
+        if (mealsWithPrice.length > 1) {
+            console.warn(`Multiple meals [${mealsWithPrice.map(meal => meal.category).join(', ')}] found in Mensa XML for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}, taking the first one`);
+        }
+        return mealsWithPrice[0];
+    } else {
+        return null;
+    }
+}
+    
+
 export async function createMealLookup() {
     let transactions = JSON.parse(fs.readFileSync(transactionFile, 'utf-8'));
     let transactionItems = JSON.parse(fs.readFileSync(transactionItemsFile, 'utf-8'));
-    let openMensaMeals = JSON.parse(fs.readFileSync(openMensaCacheFile, 'utf-8'));
     const mealLookup = {};
     transactionItems = transactionItems.filter(ti => ti.name.startsWith("Essen"));
     console.log('Filtered Transaction Items:', [...new Set(transactionItems.map(ti => ti.name))]);
@@ -91,23 +133,30 @@ export async function createMealLookup() {
                 mealLookup[date.toISOString().split('T')[0]] = {};
             }
             const ortName = transaction.ortName;
-            const canteenId = ortNameOpenMensaMapping[ortName];
-            if (canteenId) {
-                if (mealLookup[date.toISOString().split('T')[0]][canteenId] === undefined) {
-                    mealLookup[date.toISOString().split('T')[0]][canteenId] = {};
+            const canteenIdOpenMensa = ortNameOpenMensaMapping[ortName];
+            if (canteenIdOpenMensa) {
+                if (mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa] === undefined) {
+                    mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa] = {};
                 }
-                // cacheKey is canteenId + date in format YYYY-MM-DD
-                const cacheKey = `${canteenId}_${date.toISOString().split('T')[0]}`;
-                var meals = openMensaMeals[cacheKey] || [];
-                const mealsWithPrice = meals.filter(meal => meal.prices && Object.values(meal.prices).includes(price));
-                if (mealsWithPrice.length > 0) {
-                    if (mealsWithPrice.length > 1) {
-                        console.warn(`Multiple meals [${mealsWithPrice.map(meal => meal.category).join(', ')}] found for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}, taking the first one`);
-                    }
-                    mealLookup[date.toISOString().split('T')[0]][canteenId][item.name] = mealsWithPrice[0];
+                var meal = await findMealOpenMensa(canteenIdOpenMensa, date, price);
+                if (meal) {
+                    mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa][item.name] = meal;
                     // console.log(`Matched meal ${mealsWithPrice[0].category} for transaction item ${item.name} with price ${price}`);
                 } else {
-                    console.warn(`No meal found for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}`);
+                    console.warn(`No meal found for canteen ${canteenIdOpenMensa} on ${date.toISOString().split('T')[0]} with price ${price}`);
+                }
+            }
+            const canteenIdMensaXML = ortNameMensaXMLMapping[ortName];
+            if (canteenIdMensaXML) {
+                if (mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML] === undefined) {
+                    mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML] = {};
+                }
+                var meal = await findMealMensaXML(canteenIdMensaXML, date, price);
+                if (meal) {
+                    mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML][item.name] = meal;
+                    // console.log(`Matched meal ${meal.category} for transaction item ${item.name} with price ${price}`);
+                } else {
+                    console.warn(`No meal found in Mensa XML for canteen ${canteenIdMensaXML} on ${date.toISOString().split('T')[0]} with price ${price}`);
                 }
             }
         }
