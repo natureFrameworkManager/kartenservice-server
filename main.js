@@ -4,6 +4,7 @@ dotenv.config({ quiet: true });
 
 import { getAuthTokenWithDays, getTransactions, getTransactionPositions, getOpenMensaCanteens, getAllOpenMensaMealsForCanteensDuration, getAllOpenMensaMealsForCanteens, getMensaXML } from './api.js';
 import { expandTransactions, createMealLookup, parseMensaXML, saveAndExpandMensaXML } from './logic.js';
+import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTransPosList } from './db.js'
 
 (async () => {
     try {
@@ -15,14 +16,16 @@ import { expandTransactions, createMealLookup, parseMensaXML, saveAndExpandMensa
         var today = new Date();
         var pastDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
         const transactions = await getTransactions(cardnumber, pastDate, today, authToken);
+        insertTransList(transactions, cardnumber);
         console.log('Transactions:', transactions[0]);
         const transactionPositions = await getTransactionPositions(cardnumber, pastDate, today, authToken);
+        insertTransPosList(transactionPositions, cardnumber);
         console.log('Transaction Positions:', transactionPositions[0]);
         await expandTransactions(transactions, transactionPositions);
         const canteens = await getOpenMensaCanteens();
         console.log('Canteens:', canteens);
         console.log('Fetching meals for canteens may take up to', await getAllOpenMensaMealsForCanteensDuration(canteens.map(c => c.id), pastDate) / 1000, 'seconds');
-        const meals = await getAllOpenMensaMealsForCanteens(canteens.map(c => c.id), pastDate);
+        const meals = await getAllOpenMensaMealsForCanteens(canteens.map(c => c.id), new Date());
         console.log('Meals:', meals[0]);
         console.log('Meals count:', meals.length);
         
@@ -36,6 +39,7 @@ import { expandTransactions, createMealLookup, parseMensaXML, saveAndExpandMensa
             if (mealsXML === null) {
                 continue;
             }
+            insertMensaXMLMeals(mealsXML);
             saveAndExpandMensaXML(mealsXML);
             console.log(`Processed ${mealsXML.length} meals for date:`, dateStr);
         }

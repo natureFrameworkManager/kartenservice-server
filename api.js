@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import {JSDOM} from 'jsdom';
+import { insertOpenMensaMeals } from './db.js';
 dotenv.config({ quiet: true });
 
 const baseUrl = process.env.BASE_URL;
@@ -271,6 +272,7 @@ export async function getOpenMensaMeals(canteenId, date) {
     const cachedData = await readCache(openMensaCacheFile, cacheKey);
     if (cachedData) {
         console.log(`Cache hit for canteen ${canteenId} on date ${date}`);
+        insertOpenMensaMeals(cachedData, canteenId, date);
         return cachedData;
     }
     const response = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days/${date}/meals`, {
@@ -310,6 +312,7 @@ export async function getOpenMensaMeals(canteenId, date) {
         return allData;
     }
     await writeCache(openMensaCacheFile, cacheKey, allData);
+    insertOpenMensaMeals(allData, canteenId, date);
     return allData;
 }
 
