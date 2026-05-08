@@ -1,16 +1,31 @@
 import { DatabaseSync } from 'node:sqlite';
+import { InfisicalSDK } from '@infisical/sdk'
+import dotenv from 'dotenv';
+import { set } from 'zod';
+dotenv.config({ quiet: true });
+
+let client;
+
+export async function setupInfisicalClient() {
+    if (client) {
+        return;
+    }
+
+    const infisicalSdk = new InfisicalSDK({
+        siteUrl: process.env.INFISICAL_SITE_URL,
+    });
+
+    await infisicalSdk.auth().universalAuth.login({
+        clientId: process.env.INFISICAL_CLIENT_ID,
+        clientSecret: process.env.INFISICAL_CLIENT_SECRET
+    });
+
+    client = infisicalSdk;
+}
 
 const db = new DatabaseSync('database.db');
 
 // create schema
-db.exec(`
-    CREATE TABLE IF NOT EXISTS cards (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        cardnumber TEXT NOT NULL UNIQUE,
-        passwort TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_cards_cardnumber ON cards (cardnumber);
-`);
 db.exec(`
   CREATE TABLE IF NOT EXISTS trans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,22 +102,37 @@ db.exec(`
  * @param {String} passwort
  * @return {void} 
  */
-export function insertCard(cardnumber, passwort) {
-    const stmt = db.prepare('INSERT OR IGNORE INTO cards (cardnumber, passwort) VALUES (?, ?)');
-    stmt.run(cardnumber, passwort);
+export async function insertCard(cardnumber, passwort) {
+    try {
+        await client.secrets().getSecret({
+        environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+        projectId: process.env.INFISICAL_PROJECT_ID,
+        secretName: cardnumber,
+        viewSecretValue: false
+        });
+    } catch (error) {
+        await client.secrets().createSecret(cardnumber, {
+            environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+            projectId: process.env.INFISICAL_PROJECT_ID,
+            secretValue: passwort
+        });
+    }
 }
 
 /**
  * 
  * @returns {{id: number, cardnumber: string, password: string}[]}
  */
-export function getCards() {
-    const stmt = db.prepare('SELECT * FROM cards');
-    var results = stmt.all();
-    return results.map(r => ({
-        id: r.id,
-        cardnumber: r.cardnumber,
-        password: r.passwort
+export async function getCards() {
+    const cardsResults = await client.secrets().listSecrets({
+        environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+        projectId: process.env.INFISICAL_PROJECT_ID,
+        viewSecretValue: true,
+    });
+    return cardsResults.secrets.map(c => ({
+        id: c.id,
+        cardnumber: c.secretKey,
+        password: c.secretValue
     }));
 }
 
@@ -111,14 +141,22 @@ export function getCards() {
  * @param {String} cardnumber 
  * @returns {{id: number, cardnumber: string, password: string} | null}
  */
-export function getCard(cardnumber) {
-    const stmt = db.prepare('SELECT * FROM cards WHERE cardnumber = ?');
-    var result = stmt.get(cardnumber);
-    return result ? {
-        id: result.id,
-        cardnumber: result.cardnumber,
-        password: result.passwort
-    } : null;
+export async function getCard(cardnumber) {
+    try {
+        const card = await client.secrets().getSecret({
+            environment: process.env.INFISICAL_ENVIRONMENT || "dev",
+            projectId: process.env.INFISICAL_PROJECT_ID,
+            secretName: cardnumber,
+            viewSecretValue: true
+        });
+        return {
+            id: card.id,
+            cardnumber: card.secretKey,
+            password: card.secretValue
+        };
+    } catch (error) {
+        return null;
+    }
 }
 
 /**

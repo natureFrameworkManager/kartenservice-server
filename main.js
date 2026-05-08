@@ -3,13 +3,14 @@ dotenv.config({ quiet: true });
 
 import { getAuthTokenWithDays, getTransactions, getTransactionPositions, getOpenMensaCanteens, getAllOpenMensaMealsForCanteensDuration, getAllOpenMensaMealsForCanteens, getMensaXML } from './api.js';
 import { createMealLookup, parseMensaXML } from './logic.js';
-import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTransPosList, getCards, insertCard } from './db.js'
+import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTransPosList, getCards, insertCard, setupInfisicalClient } from './db.js'
 
 (async () => {
+    await setupInfisicalClient();
     try {
-        insertCard(process.env.CARD_NUMBER, process.env.CARD_PASSWORD);
+        await insertCard(process.env.CARD_NUMBER, process.env.CARD_PASSWORD);
         var pastDate = new Date();
-        const cards = getCards();
+        const cards = await getCards();
         for (const card of cards) {
             try {
                 console.log('Processing card:', card.cardnumber);
@@ -56,6 +57,6 @@ import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTrans
         
         await createMealLookup();
     } catch (error) {
-        console.error('Error fetching auth token:', error);
+        console.error(error);
     }
 })();
