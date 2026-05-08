@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
+import {JSDOM} from 'jsdom';
 dotenv.config({ quiet: true });
 
 const baseUrl = process.env.BASE_URL;
@@ -7,6 +8,7 @@ const basicAuth = Buffer.from(`${process.env.BASIC_AUTH_USERNAME}:${process.env.
 
 const openMensaApiUrl = process.env.OPENMENSA_API_URL;
 const openMensaCacheFile = process.env.OPENMENSA_CACHE_FILE;
+const mensaXmlUrl = process.env.MENSA_XML_URL;
 
 export async function readCache(filePath, key) {
     try {
@@ -194,6 +196,32 @@ export async function getTransactionPositions(cardnumber, dateStart, dateEnd, au
     return data;
 }
 
+/**
+ * 
+ * @param {string} locationId 
+ * @param {Date} date 
+ * @returns {Promise<Document>} XML document containing the menu for the given location and date
+ */
+export async function getMensaXML(locationId, date) {
+    var dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const response = await fetch(`${mensaXmlUrl}?location=${locationId}&date=${dateStr}`, {
+        method: 'GET',
+        headers: {
+            'accept': 'application/xml'
+        }
+    });
+    if (!response.ok) {
+        throw new Error(`Unexpected error: ${response.status} - ${await response.text()}`);
+    }
+    const data = await response.text();
+    if (!data || data.trim() === '') {
+        console.error(`Received empty response for location ${locationId} on date ${dateStr}`);
+        return null;
+    }
+    const xmlDoc = new JSDOM(data, { contentType: "application/xml" }).window.document;
+    return xmlDoc;
+}
+
 export async function getOpenMensaCanteens() {
     const response = await fetch(`${openMensaApiUrl}/canteens`, {
         method: 'GET',
@@ -267,7 +295,7 @@ export async function getOpenMensaMeals(canteenId, date) {
         if (!pageResponse.ok) {
             if (pageResponse.status === 429) {
                 // Too many requests, wait and retry
-                console.warn(`Rate limit exceeded, waiting before retrying...`);
+                console.warn(`Rate limit exceeded.`);
                 break;
             }
             throw new Error(`Unexpected error: ${pageResponse.status} - ${await pageResponse.text()}`);

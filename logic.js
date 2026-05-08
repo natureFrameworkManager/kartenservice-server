@@ -6,6 +6,7 @@ const transactionFile = process.env.TRANSACTION_FILE;
 const transactionItemsFile = process.env.TRANSACTION_POSITIONS_FILE;
 const openMensaCacheFile = process.env.OPENMENSA_CACHE_FILE;
 const mealLookupFile = process.env.MEAL_LOOKUP_FILE;
+const mensaXMLFile = process.env.XML_CACHE_FILE;
 
 export const ortNameOpenMensaMapping = {
     "MaP Mensaküche Leitung": 63, // Mensa am Park
@@ -112,4 +113,122 @@ export async function createMealLookup() {
         }
     }
     fs.writeFileSync(mealLookupFile, JSON.stringify(mealLookup, null, 2));
+}
+
+function parseMensaXMLPrices(pricesElements) {
+    var priceMap = {};
+    for (const price of pricesElements) {
+        var priceType = price.attributes.getNamedItem('consumerID').value;
+        var priceValue = parseFloat(price.textContent);
+        switch (priceType) {
+            case "0":
+                priceMap["students"] = priceValue;
+                break;
+            case "1":
+                priceMap["employees"] = priceValue;
+                break;
+            case "2":
+                priceMap["others"] = priceValue;
+                break;
+        }
+    }
+    return priceMap;
+}
+
+/**
+ * 
+ * @param {Document} xmldocument 
+ */
+export function parseMensaXML(xmldocument) {
+    var meals = [];
+    for (const element of xmldocument.querySelectorAll('group')) {
+        var date = new Date(element.attributes.getNamedItem('productiondate').value);
+        var category = element.querySelector('name').textContent;
+        var prices = parseMensaXMLPrices(element.querySelectorAll('prices price'));
+
+        var components = [...element.querySelectorAll('components component')].map(c => c.querySelector("name1").textContent);
+        var tags = [...element.querySelectorAll('taggings tagging')].filter(t => t.textContent).map(t => ({name: t.textContent, type: t.attributes.getNamedItem('type').value}));
+
+        var type = element.attributes.getNamedItem('type').value == "1" ? "Essen" : "Komponente";
+        var locationId = element.attributes.getNamedItem('location').value;
+        var internalCategory = element.querySelector('internalname').textContent;
+
+        if (type === "Essen") {
+            if (components.length > 0) {
+                meals.push({
+                    type: type,
+                    locationId: locationId,
+                    date: date,
+                    name: components[0],
+                    category: category,
+                    internalCategory: internalCategory,
+                    prices: prices,
+                    components: components.slice(1),
+                    tags: tags
+                });
+            } 
+        } else {
+            for (const component of components) {
+                meals.push({
+                    type: type,
+                    locationId: locationId,
+                    date: date,
+                    name: component,
+                    category: category,
+                    internalCategory: internalCategory,
+                    prices: prices,
+                    components: [], // components of components are not provided by the API
+                    tags: tags
+                });
+            }
+        }
+    }
+    // sort by location, date, then by type, then by category
+    meals.sort((a, b) => {
+        if (a.locationId !== b.locationId) {
+            return a.locationId - b.locationId;
+        } 
+        if (a.date.getTime() !== b.date.getTime()) {
+            return a.date.getTime() - b.date.getTime();
+        }
+        if (a.type !== b.type) {
+            return a.type.localeCompare(b.type);
+        }
+        if (a.category !== b.category) {
+            return a.category.localeCompare(b.category);
+        }
+        return 0;
+    });
+    return meals;
+}
+
+export function saveAndExpandMensaXML(meals) {
+    let existingMeals = [];
+    if (fs.existsSync(mensaXMLFile)) {
+        existingMeals = JSON.parse(fs.readFileSync(mensaXMLFile, 'utf-8'));
+    }
+    const allMeals = [...existingMeals, ...meals];
+    // Filter out meals that are already in the existing meals based on locationId, date, category, type and name
+    const uniqueMeals = allMeals.filter((meal, index, self) =>
+        index === self.findIndex((m) => m.locationId === meal.locationId && new Date(m.date).getTime() === new Date(meal.date).getTime() && m.category === meal.category && m.type === meal.type && m.name === meal.name)
+    );
+    uniqueMeals.sort((a, b) => {
+        if (a.locationId !== b.locationId) {
+            return a.locationId - b.locationId;
+        }
+        if (new Date(a.date).getTime() !== new Date(b.date).getTime()) {
+            return new Date(a.date).getTime() - new Date(b.date).getTime();
+        }
+        if (a.type !== b.type) {
+            return a.type.localeCompare(b.type);
+        }
+        if (a.category !== b.category) {
+            return a.category.localeCompare(b.category);
+        }
+        if (a.name !== b.name) {
+            return a.name.localeCompare(b.name);
+        }
+        return 0;
+    });
+    fs.writeFileSync(mensaXMLFile, JSON.stringify(uniqueMeals, null, 2));
 }
