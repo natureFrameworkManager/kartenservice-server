@@ -104,37 +104,6 @@ db.exec(`
     CREATE INDEX IF NOT EXISTS idx_meals_date ON meals (date);
     CREATE INDEX IF NOT EXISTS idx_meals_internalCategory ON meals (internalCategory);
 `);
-db.exec(`
-    CREATE TABLE IF NOT EXISTS openmensa_meals (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        notes TEXT,
-        prices TEXT,
-        category TEXT NOT NULL,
-        date INTEGER NOT NULL,
-        canteenId INTEGER NOT NULL,
-        UNIQUE(name, date, canteenId)
-    );
-    CREATE INDEX IF NOT EXISTS idx_openmensa_meals_date ON openmensa_meals (date);
-    CREATE INDEX IF NOT EXISTS idx_openmensa_meals_canteenId ON openmensa_meals (canteenId);
-`);
-db.exec(`
-    CREATE TABLE IF NOT EXISTS mensa_xml_cache (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        locationId INTEGER NOT NULL,
-        date INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        internalCategory TEXT,
-        prices TEXT,
-        components TEXT,
-        tags TEXT,
-        UNIQUE(locationId, date, name, category)
-    );
-    CREATE INDEX IF NOT EXISTS idx_mensa_xml_cache_locationId ON mensa_xml_cache (locationId);
-    CREATE INDEX IF NOT EXISTS idx_mensa_xml_cache_date ON mensa_xml_cache (date);
-    CREATE INDEX IF NOT EXISTS idx_mensa_xml_cache_internalCategory ON mensa_xml_cache (internalCategory);
-`);
 
 /**
  * 
@@ -398,8 +367,9 @@ export function insertOpenMensaMeals(meals, canteenId, date) {
     var mensaLocationId = getMensaLocationByOpenMensaId(canteenId).id;
     
     const stmt = db.prepare(`
-        INSERT OR IGNORE INTO meals (mensa_location_id, date, name, category, prices, notes)
+        INSERT INTO meals (mensa_location_id, date, name, category, prices, notes)
         VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), prices = VALUES(prices), notes = VALUES(notes)
     `);
     for (const meal of meals) {
         stmt.run(
@@ -422,7 +392,7 @@ export function getOpenMensaDays(canteenId, startDate = null) {
 }
 
 export function getAllOpenMensaMeals() {
-    const stmt = db.prepare('SELECT * FROM meals');
+    const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id');
     const results = stmt.all();
     return results.map(r => ({
         id: r.id,
@@ -431,6 +401,10 @@ export function getAllOpenMensaMeals() {
         prices: r.prices ? JSON.parse(r.prices) : null,
         category: r.category,
         date: new Date(r.date),
+        locationName: r.locationName,
+        locationInternalName: r.locationInternalName,
+        locationOpenMensaId: r.locationOpenMensaId,
+        locationMensaXMLId: r.locationMensaXMLId,
         canteenId: r.mensa_location_id
     }));
 }
@@ -438,7 +412,7 @@ export function getAllOpenMensaMeals() {
 export function getOpenMensaMeals(canteenId, date) {
     var date = new Date(date);
     var mensaLocationId = getMensaLocationByOpenMensaId(canteenId).id;
-    const stmt = db.prepare('SELECT * FROM meals WHERE mensa_location_id = ? AND date = ?');
+    const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date = ?');
     var results = stmt.all(mensaLocationId, date.getTime());
     if (results.length > 0) {
         return results.map(r => ({
@@ -448,6 +422,10 @@ export function getOpenMensaMeals(canteenId, date) {
             prices: r.prices ? JSON.parse(r.prices) : null,
             category: r.category,
             date: new Date(r.date),
+            locationName: r.locationName,
+            locationInternalName: r.locationInternalName,
+            locationOpenMensaId: r.locationOpenMensaId,
+            locationMensaXMLId: r.locationMensaXMLId,
             canteenId: r.mensa_location_id
         }));
     } else {
@@ -457,8 +435,9 @@ export function getOpenMensaMeals(canteenId, date) {
 
 export function insertMensaXMLMeals(meals) {
     const stmt = db.prepare(`
-        INSERT OR IGNORE INTO meals (mensa_location_id, date, name, category, internalCategory, prices, components, tags)
+        INSERT INTO meals (mensa_location_id, date, name, category, internalCategory, prices, components, tags)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), internalCategory = VALUES(internalCategory), prices = VALUES(prices), components = VALUES(components), tags = VALUES(tags)
     `);
     for (const meal of meals) {
         var mensaLocationId = getMensaLocationByMensaXMLId(meal.locationId).id;
@@ -476,11 +455,15 @@ export function insertMensaXMLMeals(meals) {
 }
 
 export function getAllMensaXMLMeals() {
-    const stmt = db.prepare('SELECT * FROM meals');
+    const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id');
     const results = stmt.all();
     return results.map(r => ({
         id: r.id,
         locationId: r.mensa_location_id,
+        locationName: r.locationName,
+        locationInternalName: r.locationInternalName,
+        locationOpenMensaId: r.locationOpenMensaId,
+        locationMensaXMLId: r.locationMensaXMLId,
         date: new Date(r.date),
         name: r.name,
         category: r.category,
@@ -494,12 +477,16 @@ export function getAllMensaXMLMeals() {
 export function getMensaXMLMeals(canteenId, date) {
     var date = new Date(date);
     var mensaLocationId = getMensaLocationByMensaXMLId(canteenId).id;
-    const stmt = db.prepare('SELECT * FROM meals WHERE mensa_location_id = ? AND date = ?');
+    const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date = ?');
     var results = stmt.all(mensaLocationId, date.getTime());
     if (results.length > 0) {
         return results.map(r => ({
             id: r.id,
             locationId: r.mensa_location_id,
+            locationName: r.locationName,
+            locationInternalName: r.locationInternalName,
+            locationOpenMensaId: r.locationOpenMensaId,
+            locationMensaXMLId: r.locationMensaXMLId,
             date: new Date(r.date),
             name: r.name,
             category: r.category,
