@@ -8,57 +8,6 @@ const transactionItemsFile = process.env.TRANSACTION_POSITIONS_FILE;
 const openMensaCacheFile = process.env.OPENMENSA_CACHE_FILE;
 const mealLookupFile = process.env.MEAL_LOOKUP_FILE;
 const mensaXMLFile = process.env.XML_CACHE_FILE;
-
-export const ortNameOpenMensaMapping = {
-    "MaP Mensaküche Leitung": 63, // Mensa am Park
-    "-": 64, // Mensa Academica
-    "Mensaküche amElsterbecken": 65, // Mensa am Elsterbecken
-    "-": 66, // Mensa An den Tierkliniken
-    "PSW Mensaküche Leitung": 68, // Mensa Petersteinweg
-    "-": 67, // Mensa Liebigstraße
-    "-": 69, // Mensa/Cafetaria Schönauer Straße
-    "-": 70, // Cafeteria Dittrichring
-    "-": 71, // Cafeteria Koburger Straße
-    "-": 72, // Cafeteria Philipp-Rosenthal-Straße
-};
-export const ortNameMensaXMLMapping = {
-    "MaP Mensaküche Leitung": 106, // Mensa am Park
-    "-": 118, // Mensa Academica
-    "Mensaküche amElsterbecken": 115, // Mensa am Elsterbecken
-    "-": 170, // Mensa An den Tierkliniken
-    "PSW Mensaküche Leitung": 111, // Mensa Petersteinweg
-    "-": 162, // Mensa Liebigstraße/Mensa und Cafeteria am Medizincampus
-    "-": 140, // Mensa/Cafetaria Schönauer Straße
-    "-": 153, // Cafeteria Dittrichring
-    "-": null, // Cafeteria Koburger Straße
-    "-": 127, // Cafeteria Philipp-Rosenthal-Straße/Mensaria am Botanischen Garten
-};
-
-async function findMealOpenMensa(canteenId, date, price) {
-    let openMensaMeals = getOpenMensaMeals(canteenId, date);
-    const mealsWithPrice = openMensaMeals.filter(meal => meal.prices && Object.values(meal.prices).includes(price));
-    if (mealsWithPrice.length > 0) {
-        if (mealsWithPrice.length > 1) {
-            console.warn(`Multiple meals [${mealsWithPrice.map(meal => meal.category).join(', ')}] found for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}, taking the first one`);
-        }
-        return mealsWithPrice[0];
-    } else {
-        return null;
-    }
-}
-
-async function findMealMensaXML(canteenId, date, price) {
-    var meals = getMensaXMLMeals(canteenId, date);
-    const mealsWithPrice = meals.filter(meal => meal.prices && Object.values(meal.prices).includes(price));
-    if (mealsWithPrice.length > 0) {
-        if (mealsWithPrice.length > 1) {
-            console.warn(`Multiple meals [${mealsWithPrice.map(meal => meal.category).join(', ')}] found in Mensa XML for canteen ${canteenId} on ${date.toISOString().split('T')[0]} with price ${price}, taking the first one`);
-        }
-        return mealsWithPrice[0];
-    } else {
-        return null;
-    }
-}
     
 export function updateMealLookup() {
     let transactions = getTransList();
@@ -89,53 +38,6 @@ export function updateMealLookup() {
             }
         }
     }
-}
-
-export async function createMealLookup() {
-    let transactions = getTransList();
-    let transactionItems = getTransPosList();
-    const mealLookup = {};
-    transactionItems = transactionItems.filter(ti => ti.name.startsWith("Essen"));
-    console.log('Filtered Transaction Items:', [...new Set(transactionItems.map(ti => ti.name))]);
-    for (const item of transactionItems) {
-        const transaction = transactions.find(t => t.transFullId === item.transFullId);
-        const price = item.epreis;
-        if (transaction) {
-            const date = new Date(transaction.datum.toISOString().split('T')[0]);
-            if (mealLookup[date.toISOString().split('T')[0]] === undefined) {
-                mealLookup[date.toISOString().split('T')[0]] = {};
-            }
-            const ortName = transaction.ortName;
-            const canteenIdOpenMensa = ortNameOpenMensaMapping[ortName];
-            if (canteenIdOpenMensa) {
-                if (mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa] === undefined) {
-                    mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa] = {};
-                }
-                mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa][item.name] = null; // initialize with null to indicate that we have looked for this meal
-                var meal = await findMealOpenMensa(canteenIdOpenMensa, date, price);
-                if (meal) {
-                    mealLookup[date.toISOString().split('T')[0]][canteenIdOpenMensa][item.name] = meal;
-                    // console.log(`Matched meal ${mealsWithPrice[0].category} for transaction item ${item.name} with price ${price}`);
-                } else {
-                    console.warn(`No meal found for canteen ${canteenIdOpenMensa} on ${date.toISOString().split('T')[0]} with price ${price}`);
-                }
-            }
-            const canteenIdMensaXML = ortNameMensaXMLMapping[ortName];
-            if (canteenIdMensaXML) {
-                if (mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML] === undefined) {
-                    mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML] = {};
-                }
-                var meal = await findMealMensaXML(canteenIdMensaXML, date, price);
-                if (meal) {
-                    mealLookup[date.toISOString().split('T')[0]][canteenIdMensaXML][item.name] = meal;
-                    // console.log(`Matched meal ${meal.category} for transaction item ${item.name} with price ${price}`);
-                } else {
-                    console.warn(`No meal found in Mensa XML for canteen ${canteenIdMensaXML} on ${date.toISOString().split('T')[0]} with price ${price}`);
-                }
-            }
-        }
-    }
-    fs.writeFileSync(mealLookupFile, JSON.stringify(mealLookup, null, 2));
 }
 
 function parseMensaXMLPrices(pricesElements) {
