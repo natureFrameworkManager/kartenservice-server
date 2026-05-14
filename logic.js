@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { getMensaXMLMeals, getOpenMensaMeals, getTransList, getTransPosList } from './db.js';
+import { getMealsByPrice, getMensaLocationByInternalName, getMensaXMLMeals, getOpenMensaMeals, getTransList, getTransPosList, updateInternalCategory } from './db.js';
 dotenv.config({ quiet: true });
 
 const transactionFile = process.env.TRANSACTION_FILE;
@@ -60,6 +60,36 @@ async function findMealMensaXML(canteenId, date, price) {
     }
 }
     
+export function updateMealLookup() {
+    let transactions = getTransList();
+    let transactionItems = getTransPosList();
+    transactionItems = transactionItems.filter(ti => ti.name.startsWith("Essen"));
+    console.log('Filtered Transaction Items:', [...new Set(transactionItems.map(ti => ti.name))]); 
+    for (const item of transactionItems) {
+        const transaction = transactions.find(t => t.transFullId === item.transFullId);
+        const price = item.epreis;
+        if (transaction) {
+            const date = new Date(transaction.datum.toISOString().split('T')[0]);
+            const mensaLocationId = getMensaLocationByInternalName(transaction.ortName);
+            if (mensaLocationId) {
+                var meals = getMealsByPrice(mensaLocationId, date, price);
+                meals = meals.filter(meal => meal.internalCategory === null);
+                if (meals.length > 0) {
+                    if (meals.length > 1) {
+                        console.warn(`Multiple meals [${meals.map(meal => JSON.stringify(meal)).join(', ')}] found for location ${transaction.ortName} on ${date.toISOString().split('T')[0]} with price ${price}`);
+                    } else {
+                        console.log(`Matched meal ${JSON.stringify(meals[0])} for transaction item ${item.name} with price ${price}`);
+                        updateInternalCategory(meals[0].id, item.name);
+                    }
+                } else {
+                    console.warn(`No meal found for location ${transaction.ortName} on ${date.toISOString().split('T')[0]} with price ${price}`);
+                }
+            } else {
+                console.warn(`No mensa location found for transaction with ortName ${transaction.ortName}`);
+            }
+        }
+    }
+}
 
 export async function createMealLookup() {
     let transactions = getTransList();

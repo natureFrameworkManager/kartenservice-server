@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { InfisicalSDK } from '@infisical/sdk'
 import dotenv from 'dotenv';
 import { set } from 'zod';
+import { resourceUsage } from 'process';
 dotenv.config({ quiet: true });
 
 let client;
@@ -498,4 +499,33 @@ export function getMensaXMLMeals(canteenId, date) {
     } else {
         return [];
     }
+}
+
+export function getMensaLocationByInternalName(internalName) {
+    const stmt = db.prepare('SELECT * FROM mensa_locations WHERE internalName = ?');
+    const result = stmt.get(internalName);
+    if (result) {
+        return result.id;
+    } else {
+        return null;
+    }
+}
+
+/**
+ * 
+ * @param {number} canteenId 
+ * @param {Date} date 
+ * @param {number} price 
+ * @returns {{id: number, internalCategory: string}[]} mealIds of meals that match the price for the given canteen and date
+ */
+export function getMealsByPrice(canteenId, date, price) {
+    // filter meals by matching the location, date and price if the price is for any category equal than the given price
+    const stmt = db.prepare(`SELECT meals.id, meals.internalCategory FROM meals WHERE meals.mensa_location_id = ? AND meals.date = ? AND (meals.prices IS NOT NULL AND (json_extract(meals.prices, '$.students') = ? OR json_extract(meals.prices, '$.employees') = ? OR json_extract(meals.prices, '$.others') = ? OR json_extract(meals.prices, '$.pupils') = ?))`);
+    var results = stmt.all(canteenId, date.getTime(), price, price, price, price);
+    return results.map(r => ({id: r.id, internalCategory: r.internalCategory}));
+}
+
+export function updateInternalCategory(mealId, internalCategory) {
+    const stmt = db.prepare('UPDATE meals SET internalCategory = ? WHERE id = ?');
+    stmt.run(internalCategory, mealId);
 }

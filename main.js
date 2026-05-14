@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 import { getAuthTokenWithDays, getTransactions, getTransactionPositions, getOpenMensaCanteens, getAllOpenMensaMealsForCanteensDuration, getAllOpenMensaMealsForCanteens, getMensaXML } from './api.js';
-import { createMealLookup, parseMensaXML } from './logic.js';
+import { createMealLookup, updateMealLookup, parseMensaXML } from './logic.js';
 import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTransPosList, getCards, insertCard, setupInfisicalClient } from './db.js'
 
 (async () => {
@@ -55,7 +55,8 @@ import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTrans
             console.log(`Processed ${mealsXML.length} meals for date:`, dateStr);
         }
         
-        await createMealLookup();
+        /* await createMealLookup(); */
+        updateMealLookup();
     } catch (error) {
         console.error(error);
     }
