@@ -1,8 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { InfisicalSDK } from '@infisical/sdk'
 import dotenv from 'dotenv';
-import { set } from 'zod';
-import { resourceUsage } from 'process';
 dotenv.config({ quiet: true });
 
 let client;
