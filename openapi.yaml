@@ -16,9 +16,7 @@ servers:
 
 tags:
   - name: Meals
-    description: Raw meal data from external sources
-  - name: Meal Lookups
-    description: Matched meal lookups derived from transaction history
+    description: Meal data from the local database
   - name: Transactions
     description: Card transaction and transaction position history
   - name: Cards
@@ -50,58 +48,6 @@ components:
           type: string
       required: [message]
 
-    MensaXMLMeal:
-      type: object
-      properties:
-        id:
-          type: integer
-        locationId:
-          type: integer
-        date:
-          type: string
-          format: date-time
-        name:
-          type: string
-        category:
-          type: string
-        internalCategory:
-          type: string
-          nullable: true
-        prices:
-          $ref: '#/components/schemas/Prices'
-        components:
-          type: array
-          items:
-            type: string
-          nullable: true
-        tags:
-          type: array
-          items:
-            $ref: '#/components/schemas/Tag'
-          nullable: true
-
-    OpenMensaMeal:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        notes:
-          type: array
-          items:
-            type: string
-          nullable: true
-        prices:
-          $ref: '#/components/schemas/Prices'
-        category:
-          type: string
-        date:
-          type: string
-          format: date-time
-        canteenId:
-          type: integer
-
     Prices:
       type: object
       nullable: true
@@ -123,40 +69,51 @@ components:
           format: float
           nullable: true
 
-    Tag:
+    Meal:
       type: object
+      description: A meal from the local database, joined with canteen location data.
       properties:
+        id:
+          type: integer
+        mensa_location_id:
+          type: integer
+        locationName:
+          type: string
+        locationInternalName:
+          type: string
+          nullable: true
+        locationOpenMensaId:
+          type: integer
+        locationMensaXMLId:
+          type: integer
+          nullable: true
+        date:
+          type: string
+          format: date-time
         name:
           type: string
-        type:
+        category:
           type: string
-
-    MealLookupEntry:
-      description: |
-        Matched meal for a transaction item. Null means lookup was attempted but no
-        meal was found.
-      nullable: true
-      oneOf:
-        - $ref: '#/components/schemas/OpenMensaMeal'
-        - type: 'null'
-
-    MealLookupByMealName:
-      description: Map of meal name (e.g. "Essen A") to matched meal entry.
-      type: object
-      additionalProperties:
-        $ref: '#/components/schemas/MealLookupEntry'
-
-    MealLookupByCanteen:
-      description: Map of canteen ID to meal name map.
-      type: object
-      additionalProperties:
-        $ref: '#/components/schemas/MealLookupByMealName'
-
-    MealLookupByDate:
-      description: Map of date (YYYY-MM-DD) to canteen map.
-      type: object
-      additionalProperties:
-        $ref: '#/components/schemas/MealLookupByCanteen'
+        internalCategory:
+          type: string
+          nullable: true
+        prices:
+          $ref: '#/components/schemas/Prices'
+        notes:
+          type: array
+          items:
+            type: string
+          nullable: true
+        components:
+          type: array
+          items:
+            type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          nullable: true
 
     Transaction:
       type: object
@@ -269,73 +226,25 @@ paths:
   /meals:
     get:
       tags: [Meals]
-      summary: Get all combined meals
-      description: Returns all meals combined from both sources. Not yet implemented — returns a placeholder string.
+      summary: Get all meals
+      description: Returns all meals from the database with canteen location data.
       operationId: getMeals
       responses:
         "200":
-          description: Placeholder response.
-          content:
-            application/json:
-              schema:
-                type: string
-                example: meals
-
-  /meals/mensa-xml:
-    get:
-      tags: [Meals]
-      summary: Get all meals from Mensa XML
-      description: Returns all meals stored in the local Mensa XML cache.
-      operationId: getMealsMensaXml
-      responses:
-        "200":
-          description: List of Mensa XML meals.
+          description: List of meals.
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MensaXMLMeal'
+                  $ref: '#/components/schemas/Meal'
 
-  /meals/open-mensa:
+  /meals/{date}:
     get:
       tags: [Meals]
-      summary: Get all meals from OpenMensa
-      description: Returns all meals stored in the local OpenMensa cache.
-      operationId: getMealsOpenMensa
-      responses:
-        "200":
-          description: List of OpenMensa meals.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/OpenMensaMeal'
-
-  # ---------------------------------------------------------------------------
-  # Meal Lookups
-  # ---------------------------------------------------------------------------
-
-  /meal-lookups:
-    get:
-      tags: [Meal Lookups]
-      summary: Get all meal lookups
-      description: Returns the full meal lookup map keyed by date, canteen ID, and meal name.
-      operationId: getMealLookups
-      responses:
-        "200":
-          description: Full meal lookup map.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MealLookupByDate'
-
-  /meal-lookups/{date}:
-    get:
-      tags: [Meal Lookups]
-      summary: Get meal lookup for a specific date
-      operationId: getMealLookupsByDate
+      summary: Get meals for a date
+      description: Returns all meals for the given date. Returns 404 if no meals are found.
+      operationId: getMealsByDate
       parameters:
         - name: date
           in: path
@@ -346,19 +255,22 @@ paths:
             example: "2025-11-12"
       responses:
         "200":
-          description: Canteen map for the given date.
+          description: List of meals for the given date.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealLookupByCanteen'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
         "404":
           $ref: '#/components/responses/NotFound'
 
-  /meal-lookups/{date}/{canteenId}:
+  /meals/{date}/{canteenId}:
     get:
-      tags: [Meal Lookups]
-      summary: Get meal lookup for a specific date and canteen
-      operationId: getMealLookupsByDateAndCanteen
+      tags: [Meals]
+      summary: Get meals for a date and canteen
+      description: Returns all meals for the given date and canteen. Returns 404 if no meals are found.
+      operationId: getMealsByDateAndCanteen
       parameters:
         - name: date
           in: path
@@ -375,19 +287,22 @@ paths:
             example: 63
       responses:
         "200":
-          description: Meal name map for the given date and canteen.
+          description: List of meals for the given date and canteen.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealLookupByMealName'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
         "404":
           $ref: '#/components/responses/NotFound'
 
-  /meal-lookups/{date}/{canteenId}/{mealName}:
+  /meals/{date}/{canteenId}/{mealName}:
     get:
-      tags: [Meal Lookups]
-      summary: Get meal lookup for a specific date, canteen and meal name
-      operationId: getMealLookupsByDateCanteenAndMeal
+      tags: [Meals]
+      summary: Get a specific meal by date, canteen, and name
+      description: Returns a single meal matched by date, canteen ID, and meal name. Returns 404 if not found.
+      operationId: getMealByDateCanteenAndName
       parameters:
         - name: date
           in: path
@@ -410,20 +325,20 @@ paths:
             example: "Essen DD"
       responses:
         "200":
-          description: Matched meal entry (null if no match was found).
+          description: The matching meal.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealLookupEntry'
+                $ref: '#/components/schemas/Meal'
         "404":
           $ref: '#/components/responses/NotFound'
 
-  /meal-lookups/card/{cardNumber}:
+  /meals/card/{cardNumber}:
     get:
-      tags: [Meal Lookups]
-      summary: Get meal lookups for a specific card number
-      description: Returns meal lookup entries filtered to dates on which this card has transactions. Requires authentication as the given card.
-      operationId: getMealLookupsByCard
+      tags: [Meals]
+      summary: Get meals matched to a card's transactions
+      description: Returns all meals matched to the full transaction history of the given card. Requires authentication as the given card.
+      operationId: getCardMeals
       security:
         - basicAuth: []
       parameters:
@@ -435,22 +350,24 @@ paths:
             example: "123456789"
       responses:
         "200":
-          description: Meal lookup map filtered to this card's transaction dates.
+          description: List of matched meals.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealLookupByDate'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
 
-  /meal-lookups/card/{cardNumber}/{date}:
+  /meals/card/{cardNumber}/{date}:
     get:
-      tags: [Meal Lookups]
-      summary: Get meal lookup for a specific card number and date
-      description: Returns the canteen meal map for the given date. Requires authentication as the given card.
-      operationId: getMealLookupsByCardAndDate
+      tags: [Meals]
+      summary: Get meals matched to a card's transactions on a specific date
+      description: Returns meals matched to the transaction history of the given card on the given date. Requires authentication as the given card.
+      operationId: getCardMealsByDate
       security:
         - basicAuth: []
       parameters:
@@ -469,17 +386,17 @@ paths:
             example: "2025-11-12"
       responses:
         "200":
-          description: Canteen map for the given date.
+          description: List of matched meals for the given date.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MealLookupByCanteen'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
         "401":
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
-        "404":
-          $ref: '#/components/responses/NotFound'
 
   # ---------------------------------------------------------------------------
   # Transactions
@@ -666,7 +583,7 @@ paths:
     post:
       tags: [Fetch]
       summary: Trigger Mensa XML meal fetch
-      description: Asynchronously fetches meals from the Mensa XML feed for the current and previous week and rebuilds the meal lookup.
+      description: Asynchronously fetches meals from the Mensa XML feed for the past week and rebuilds the meal lookup.
       operationId: fetchMensaXml
       responses:
         "202":
@@ -711,3 +628,4 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         "403":
           $ref: '#/components/responses/Forbidden'
+

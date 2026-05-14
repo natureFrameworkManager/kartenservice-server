@@ -620,6 +620,108 @@ export function getMensaXMLMeals(canteenId, date) {
     }
 }
 
+/**
+ * Returns meals filtered by date, canteen, and internal category.
+ * @param {string|null} date 
+ * @param {number|null} canteenId 
+ * @param {string|null} internalCategory 
+ * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
+ */
+export function getMeals(date = null, canteenId = null, internalCategory = null) {
+    var dateObj = date ? new Date(date) : null;
+    var mensaLocationId = canteenId ? getMensaLocationByMensaXMLId(canteenId)?.id : null;
+    var sql = "meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
+    /** @type {any[]} */
+    var params = [];
+    if (dateObj) {
+        sql += " AND date = ?";
+        params.push(dateObj.getTime());
+    }
+    if (mensaLocationId) {
+        sql += " AND mensa_location_id = ?";
+        params.push(mensaLocationId);
+    }
+    if (internalCategory) {
+        sql += " AND internalCategory = ?";
+        params.push(internalCategory);
+    }
+    const stmt = db.prepare(sql);
+    const results = stmt.all(...params);
+    return results.map(/** @param {any} r */ r => ({
+        id: r.id,
+        mensa_location_id: r.mensa_location_id,
+        locationName: r.locationName,
+        locationInternalName: r.locationInternalName,
+        locationOpenMensaId: r.locationOpenMensaId,
+        locationMensaXMLId: r.locationMensaXMLId,
+        date: new Date(r.date),
+        name: r.name,
+        category: r.category,
+        internalCategory: r.internalCategory,
+        prices: r.prices ? JSON.parse(r.prices) : {students: null, employees: null, others: null, pupils: null},
+        notes: r.notes ? JSON.parse(r.notes) : [],
+        components: r.components ? JSON.parse(r.components) : [],
+        tags: r.tags ? JSON.parse(r.tags) : []
+    }));
+}
+
+/**
+ * Returns meals for a specific card and date.
+ * Matches the meals based on the transaction position names for the transactions of the card on that date to the internal category of the meals. This allows to assign meals to transactions based on their name and the date they were consumed.
+ * @param {string} cardnumber 
+ * @param {Date|null} date 
+ * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
+ */
+export function getCardMeals(cardnumber, date = null) {
+    // get transactions for the card and date
+    var sql = "SELECT DISTINCT trans.datum, trans.ortName, transpos.name FROM trans INNER JOIN transpos ON trans.transFullId = transpos.transFullId WHERE trans.cardnumber = ?";
+    /** @type {any[]} */
+    var params = [cardnumber];
+    if (date) {
+        var startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        var endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        sql += " AND datum >= ? AND datum <= ?";
+        params.push(startOfDay.getTime(), endOfDay.getTime());
+    }
+    const transStmt = db.prepare(sql);
+    const transactions = transStmt.all(...params).map(/** @param {any} r */ r => ({
+        datum: new Date(r.datum),
+        mensaLocationId: getMensaLocationByInternalName(r.ortName),
+        internalName: r.name
+    })).filter(t => t.mensaLocationId !== null);
+    console.log(`Found ${transactions.length} transactions for card ${cardnumber} on date ${date ? date.toISOString().split('T')[0] : 'all dates'}`);
+
+    // for each transaction, find meals with matching internal category, date and location
+    var meals = [];
+    const mealStmt = db.prepare('SELECT DISTINCT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date >= ? AND meals.date <= ? AND meals.internalCategory = ?');
+    for (const trans of transactions) {
+        var startOfDay = new Date(trans.datum);
+        startOfDay.setHours(0, 0, 0, 0);
+        var endOfDay = new Date(trans.datum);
+        endOfDay.setHours(23, 59, 59, 999);
+        const mealResults = mealStmt.all(trans.mensaLocationId, startOfDay.getTime(), endOfDay.getTime(), trans.internalName);
+        meals.push(...mealResults.map(/** @param {any} r */ r => ({
+            id: r.id,
+            name: r.name,
+            notes: r.notes ? JSON.parse(r.notes) : [],
+            prices: r.prices ? JSON.parse(r.prices) : {students: null, employees: null, others: null, pupils: null},
+            category: r.category,
+            date: new Date(r.date),
+            locationName: r.locationName,
+            locationInternalName: r.locationInternalName,
+            locationOpenMensaId: r.locationOpenMensaId,
+            locationMensaXMLId: r.locationMensaXMLId,
+            mensa_location_id: r.mensa_location_id,
+            components: r.components ? JSON.parse(r.components) : [],
+            tags: r.tags ? JSON.parse(r.tags) : [],
+            internalCategory: r.internalCategory
+        })));
+    }
+    return meals;
+}
+
 export function getOpenMensaIds() {
     const stmt = db.prepare('SELECT DISTINCT openMensaId FROM mensa_locations WHERE openMensaId IS NOT NULL');
     const results = stmt.all();
