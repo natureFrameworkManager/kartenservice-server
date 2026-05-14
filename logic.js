@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { getMealsByPrice, getMensaLocationByInternalName, getMensaXMLMeals, getOpenMensaMeals, getTransList, getTransPosList, updateInternalCategory } from './db.js';
+import { getMealsByPrice, getMensaLocationByInternalName, getMensaXMLIds, getMensaXMLMeals, getMissingMensaXMLDays, getOpenMensaIds, getOpenMensaMeals, getTransList, getTransPosList, insertMensaXMLMeals, insertTransList, insertTransPosList, updateInternalCategory } from './db.js';
+import { getAllOpenMensaMealsForCanteens, getAuthTokenWithDays, getMensaXML, getTransactionPositions, getTransactions } from './api.js';
 dotenv.config({ quiet: true });
 
 const transactionFile = process.env.TRANSACTION_FILE;
@@ -124,5 +125,58 @@ export function parseMensaXML(xmldocument) {
         }
         return 0;
     });
+    return meals;
+}
+
+export async function fetchTransAndTranspos(cardnumber, password) {
+    const { authToken, days } = await getAuthTokenWithDays(cardnumber, password);
+    var today = new Date(new Date().setHours(0, 0, 0, 0));
+    var pastDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
+    const transactions = await getTransactions(cardnumber, pastDate, today, authToken);
+    const transactionPositions = await getTransactionPositions(cardnumber, pastDate, today, authToken);
+
+    insertTransList(transactions, cardnumber);
+    insertTransPosList(transactionPositions, cardnumber);
+
+    return { trans: transactions, transpos: transactionPositions, pastDate: pastDate };
+}
+
+export async function fetchOpenMensaMeals(pastDate) {
+    const canteens = getOpenMensaIds();
+    const meals = await getAllOpenMensaMealsForCanteens(canteens, pastDate);
+    return meals;
+}
+
+export async function fetchMensaXMLMeals(pastDate) {
+    var meals = [];
+    // get date of monday of last week
+    var lastWeekMonday = new Date();
+    lastWeekMonday.setDate(lastWeekMonday.getDate() - lastWeekMonday.getDay() - 6);
+    var today = new Date(new Date().setHours(0, 0, 0, 0));
+    var days = [];
+    for (var d = lastWeekMonday; d <= today; d.setDate(d.getDate() + 1)) {
+        days.push(new Date(d));
+    }
+
+    const canteens = getMensaXMLIds();
+    for (let index = 0; index < canteens.length; index++) {
+        const canteen = canteens[index];
+
+        // API only provides meals for the current, future and maybe last week
+        // var canteenDays = days.concat(getMissingMensaXMLDays(canteen, pastDate));
+        var canteenDays = days;
+        var canteenMeals = [];
+        for (const d of canteenDays) {
+            const mealsXML = parseMensaXML(await getMensaXML(canteen, new Date(d)));
+            if (mealsXML === null) {
+                continue;
+            }
+            canteenMeals = canteenMeals.concat(mealsXML);
+            insertMensaXMLMeals(mealsXML);
+        }
+        meals = meals.concat(canteenMeals);
+        console.log(`Fetched ${canteenMeals.length} meals for canteen ${canteen}, canteen progess: ${index + 1}/${canteens.length}`);
+
+    }
     return meals;
 }

@@ -294,7 +294,6 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
 export async function getOpenMensaMeals(canteenId, date) {
     const cachedData = getDBOpenMensaMeals(canteenId, new Date(date));
     if (cachedData && cachedData.length > 0 && new Date(date) <= new Date(new Date().toISOString().split('T')[0])) {
-        console.log(`Cache hit for canteen ${canteenId} on date ${date}`);
         return cachedData;
     }
     const response = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days/${date}/meals`, {
@@ -343,7 +342,6 @@ export async function getAllOpenMensaMeals(canteenId, startDate) {
     var cachedDays = getOpenMensaDays(canteenId, startDate);
     cachedDays = cachedDays.filter(days => days.getTime() < new Date(new Date().setHours(0, 0, 0, 0)).getTime()); // Filter out today and future days
     canteenDays = canteenDays.filter(day => !cachedDays.some(cachedDay => cachedDay.getTime() === new Date(day.date).getTime())); // Filter out days that are already cached
-    console.log(`Fetching meals for dates ${canteenDays.sort((a, b) => new Date(a.date) - new Date(b.date)).map(day => day.date).join(', ')} for canteen ${canteenId}`);
     let allMeals = [];
     for (const day of canteenDays) {
         const meals = await getOpenMensaMeals(canteenId, day.date);

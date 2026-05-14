@@ -547,6 +547,22 @@ export function insertMensaXMLMeals(meals) {
 }
 
 /**
+ * Returns the missing Mensa XML days for a specific canteen.
+ * @param {string} canteenId - Mensa XML canteen id.
+ * @param {Date|null} startDate - Start date to check for missing days.
+ * @returns {Date[]} - Array of missing dates.
+ */
+export function getMissingMensaXMLDays(canteenId, startDate = null) {
+    const startDateObj = startDate ? new Date(startDate) : new Date();
+    const location = getMensaLocationByMensaXMLId(Number(canteenId));
+    if (!location) throw new Error(`Mensa location not found for XML id: ${canteenId}`);
+    var mensaLocationId = location.id;
+    const stmt = db.prepare('SELECT DISTINCT date FROM meals WHERE mensa_location_id = ? AND date >= ? AND internalCategory IS NULL');
+    var results = stmt.all(mensaLocationId, startDateObj.getTime());
+    return results.map(/** @param {any} r */ r => new Date(r.date));
+}
+
+/**
  * Returns all meals from the database joined with their location data (Mensa XML format).
  * @returns {{id: number, locationId: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]}
  */
@@ -602,6 +618,18 @@ export function getMensaXMLMeals(canteenId, date) {
     } else {
         return [];
     }
+}
+
+export function getOpenMensaIds() {
+    const stmt = db.prepare('SELECT DISTINCT openMensaId FROM mensa_locations WHERE openMensaId IS NOT NULL');
+    const results = stmt.all();
+    return results.map(/** @param {any} r */ r => r.openMensaId);
+}
+
+export function getMensaXMLIds() {
+    const stmt = db.prepare('SELECT DISTINCT mensaXMLId FROM mensa_locations WHERE mensaXMLId IS NOT NULL');
+    const results = stmt.all();
+    return results.map(/** @param {any} r */ r => r.mensaXMLId);
 }
 
 /**
