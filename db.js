@@ -434,7 +434,7 @@ export function insertOpenMensaMeals(meals, canteenId, date) {
     const stmt = db.prepare(`
         INSERT INTO meals (mensa_location_id, date, name, category, prices, notes)
         VALUES (?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), prices = VALUES(prices), notes = VALUES(notes)
+        ON CONFLICT(mensa_location_id, date, name, category) DO UPDATE SET name = excluded.name, category = excluded.category, prices = excluded.prices, notes = excluded.notes
     `);
     for (const meal of meals) {
         stmt.run(
@@ -527,7 +527,7 @@ export function insertMensaXMLMeals(meals) {
     const stmt = db.prepare(`
         INSERT INTO meals (mensa_location_id, date, name, category, internalCategory, prices, components, tags)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE name = VALUES(name), category = VALUES(category), internalCategory = VALUES(internalCategory), prices = VALUES(prices), components = VALUES(components), tags = VALUES(tags)
+        ON CONFLICT(mensa_location_id, date, name, category) DO UPDATE SET name = excluded.name, category = excluded.category, internalCategory = excluded.internalCategory, prices = excluded.prices, components = excluded.components, tags = excluded.tags
     `);
     for (const meal of meals) {
         const loc = getMensaLocationByMensaXMLId(meal.locationId);
