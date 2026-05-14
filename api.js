@@ -223,6 +223,10 @@ export async function getMensaXML(locationId, date) {
     return xmlDoc;
 }
 
+/**
+ * Fetches the list of canteens from the OpenMensa API and filters them to include only those located in Leipzig.
+ * @returns {Promise<{id: number, name: string, city: string, address: string, coordinates: number[]}[]>} List of canteens in Leipzig with their id, name, city, address, and coordinates
+ */
 export async function getOpenMensaCanteens() {
     const response = await fetch(`${openMensaApiUrl}/canteens`, {
         method: 'GET',
@@ -237,6 +241,12 @@ export async function getOpenMensaCanteens() {
     return data.filter(canteen => canteen.city === "Leipzig");
 }
 
+/**
+ * Fetches the list of canteen days for a given canteen starting from a specified date from the OpenMensa API. Handles pagination if there are multiple pages of results.
+ * @param {number|string} canteenId 
+ * @param {Date} startDate 
+ * @returns {Promise<{date: string, closed: boolean}[]>} List of canteen days starting from the given date, including the date and whether the canteen is closed on that day. Date formatted as "yyyy-MM-dd".
+ */
 export async function getOpenMensaCanteenDays(canteenId, startDate) {
     var dateStartStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
     const response = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days?start=${dateStartStr}`, {
@@ -267,6 +277,20 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
     return allData;
 }
 
+/**
+ * @typedef {Object} Meal
+ * @property {number} id ID of the meal
+ * @property {string} name Name of the meal
+ * @property {string} category Category of the meal, e.g. "Menü", "Beilage", etc.
+ * @property {{students: number|null, employees: number|null, others: number|null, pupils: number|null}} prices Prices for different groups, null if not available
+ * @property {string[]} notes List of notes for the meal, e.g. dietary information, allergens, etc.
+ */
+/**
+ * Fetches the list of meals for a given canteen and date from the OpenMensa API. Handles pagination if there are multiple pages of results. Caches the results in the database and returns cached data if available and the date is not in the future.
+ * @param {number|string} canteenId 
+ * @param {Date} date - ISO date string.
+ * @returns {Promise<Meal[]>}
+ */
 export async function getOpenMensaMeals(canteenId, date) {
     const cachedData = getDBOpenMensaMeals(canteenId, new Date(date));
     if (cachedData && cachedData.length > 0 && new Date(date) <= new Date(new Date().toISOString().split('T')[0])) {
@@ -307,6 +331,12 @@ export async function getOpenMensaMeals(canteenId, date) {
     return allData;
 }
 
+/**
+ * Fetches all meals for a given canteen starting from a specified date. Filters out closed days and days that are already cached.
+ * @param {number|string} canteenId 
+ * @param {Date} startDate 
+ * @returns {Promise<Meal[]>}
+ */
 export async function getAllOpenMensaMeals(canteenId, startDate) {
     let canteenDays = await getOpenMensaCanteenDays(canteenId, startDate);
     canteenDays = canteenDays.filter(day => day.closed === false); // Filter out closed days
@@ -323,6 +353,12 @@ export async function getAllOpenMensaMeals(canteenId, startDate) {
     return allMeals;
 }
 
+/**
+ * Fetches all meals for a list of canteens starting from a specified date. Filters out closed days and days that are already cached.
+ * @param {Array<number|string>} canteenIds 
+ * @param {Date} startDate 
+ * @returns {Promise<Meal[]>}
+ */
 export async function getAllOpenMensaMealsForCanteens(canteenIds, startDate) {
     let allMeals = [];
     for (const canteenId of canteenIds) {
@@ -333,6 +369,12 @@ export async function getAllOpenMensaMealsForCanteens(canteenIds, startDate) {
     return allMeals;
 }
 
+/**
+ * Estimates the duration to fetch all meals for a list of canteens starting from a specified date based on the number of days that need to be fetched and a fixed wait time between requests.
+ * @param {Array<number|string>} canteenIds 
+ * @param {Date} startDate 
+ * @returns {Promise<number>} Estimated duration in milliseconds to fetch all meals for the given canteens and start date.
+ */
 export async function getAllOpenMensaMealsForCanteensDuration(canteenIds, startDate) {
     let days = 0;
     for (const canteenId of canteenIds) {
