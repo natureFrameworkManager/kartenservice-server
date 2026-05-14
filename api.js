@@ -1,5 +1,6 @@
+// @ts-check
+
 import dotenv from 'dotenv';
-import fs from 'fs';
 import {JSDOM} from 'jsdom';
 import { getOpenMensaDays, insertOpenMensaMeals, getOpenMensaMeals as getDBOpenMensaMeals } from './db.js';
 dotenv.config({ quiet: true });
@@ -8,37 +9,14 @@ const baseUrl = process.env.BASE_URL;
 const basicAuth = Buffer.from(`${process.env.BASIC_AUTH_USERNAME}:${process.env.BASIC_AUTH_PASSWORD}`).toString('base64');
 
 const openMensaApiUrl = process.env.OPENMENSA_API_URL;
-const openMensaCacheFile = process.env.OPENMENSA_CACHE_FILE;
 const mensaXmlUrl = process.env.MENSA_XML_URL;
 
-export async function readCache(filePath, key) {
-    try {
-        const data = await fs.promises.readFile(filePath, 'utf-8');
-        const cache = JSON.parse(data);
-        return cache[key];
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            // Cache file does not exist, return null
-            return null;
-        }
-        throw error;
-    }
-}
-
-export async function writeCache(filePath, key, value) {
-    let cache = {};
-    try {
-        const data = await fs.promises.readFile(filePath, 'utf-8');
-        cache = JSON.parse(data);
-    } catch (error) {
-        if (error.code !== 'ENOENT') {
-            throw error;
-        }
-    }
-    cache[key] = value;
-    await fs.promises.writeFile(filePath, JSON.stringify(cache, null, 2), 'utf-8');
-}
-
+/**
+ * 
+ * @param {*} cardnumber 
+ * @param {*} password 
+ * @returns 
+ */
 export async function getAuthToken(cardnumber, password) {
     const response = await fetch(`${baseUrl}LOGIN?karteNr=${cardnumber}&datenformat=JSON`, {
         method: 'POST',
@@ -71,6 +49,12 @@ export async function getAuthToken(cardnumber, password) {
     return data[0].authToken;
 }
 
+/**
+ * 
+ * @param {*} cardnumber 
+ * @param {*} password 
+ * @returns 
+ */
 export async function getAuthTokenWithDays(cardnumber, password) {
     const response = await fetch(`${baseUrl}LOGIN?karteNr=${cardnumber}&datenformat=JSON`, {
         method: 'POST',
@@ -117,7 +101,7 @@ export async function getAuthTokenWithDays(cardnumber, password) {
  * @property {string} bonusInfo optional field
  */
 /**
- * 
+ * Returns a list of transactions for the given card number and date range. Requires an auth token obtained from the getAuthToken function.
  * @param {string} cardnumber 
  * @param {Date} dateStart
  * @param {Date} dateEnd 
@@ -164,7 +148,7 @@ export async function getTransactions(cardnumber, dateStart, dateEnd, authToken)
  * @property {number} bewertung Rating bitmask
  */
 /**
- * 
+ * Returns a list of transaction positions for a given card number, date range and auth token. Requires an auth token obtained from the getAuthToken function.
  * @param {string} cardnumber 
  * @param {Date} dateStart 
  * @param {Date} dateEnd 
@@ -198,10 +182,10 @@ export async function getTransactionPositions(cardnumber, dateStart, dateEnd, au
 }
 
 /**
- * 
+ * Returns the XML document containing the menu for the given location and date.
  * @param {string} locationId 
  * @param {Date} date 
- * @returns {Promise<Document>} XML document containing the menu for the given location and date
+ * @returns {Promise<Document|null>} XML document containing the menu for the given location and date
  */
 export async function getMensaXML(locationId, date) {
     var dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -237,8 +221,9 @@ export async function getOpenMensaCanteens() {
     if (!response.ok) {
         throw new Error(`Unexpected error: ${response.status} - ${await response.text()}`);
     }
+    /** @type {{id: number, name: string, city: string, address: string, coordinates: number[]}[]} */
     const data = await response.json();
-    return data.filter(canteen => canteen.city === "Leipzig");
+    return (data.filter(canteen => canteen.city === "Leipzig"));
 }
 
 /**
@@ -260,6 +245,7 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
     }
     // check for pagination
     const totalPages = parseInt(response.headers.get('X-Total-Pages') || '1');
+    /** @type {{date: string, closed: boolean}[]} */
     let allData = [];
     for (let page = 1; page <= totalPages; page++) {
         const pageResponse = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days?start=${dateStartStr}&page=${page}`, {
@@ -288,11 +274,11 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
 /**
  * Fetches the list of meals for a given canteen and date from the OpenMensa API. Handles pagination if there are multiple pages of results. Caches the results in the database and returns cached data if available and the date is not in the future.
  * @param {number|string} canteenId 
- * @param {Date} date - ISO date string.
+ * @param {string} date - ISO date string.
  * @returns {Promise<Meal[]>}
  */
 export async function getOpenMensaMeals(canteenId, date) {
-    const cachedData = getDBOpenMensaMeals(canteenId, new Date(date));
+    const cachedData = getDBOpenMensaMeals(Number(canteenId), date);
     if (cachedData && cachedData.length > 0 && new Date(date) <= new Date(new Date().toISOString().split('T')[0])) {
         return cachedData;
     }
@@ -307,6 +293,7 @@ export async function getOpenMensaMeals(canteenId, date) {
     }
     // check for pagination
     const totalPages = parseInt(response.headers.get('X-Total-Pages') || '1');
+    /** @type {Meal[]} */
     let allData = [];
     for (let page = 1; page <= totalPages; page++) {
         const pageResponse = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days/${date}/meals?page=${page}`, {
@@ -339,9 +326,10 @@ export async function getOpenMensaMeals(canteenId, date) {
 export async function getAllOpenMensaMeals(canteenId, startDate) {
     let canteenDays = await getOpenMensaCanteenDays(canteenId, startDate);
     canteenDays = canteenDays.filter(day => day.closed === false); // Filter out closed days
-    var cachedDays = getOpenMensaDays(canteenId, startDate);
+    var cachedDays = getOpenMensaDays(Number(canteenId), startDate);
     cachedDays = cachedDays.filter(days => days.getTime() < new Date(new Date().setHours(0, 0, 0, 0)).getTime()); // Filter out today and future days
     canteenDays = canteenDays.filter(day => !cachedDays.some(cachedDay => cachedDay.getTime() === new Date(day.date).getTime())); // Filter out days that are already cached
+    /** @type {Meal[]} */
     let allMeals = [];
     for (const day of canteenDays) {
         const meals = await getOpenMensaMeals(canteenId, day.date);
@@ -358,6 +346,7 @@ export async function getAllOpenMensaMeals(canteenId, startDate) {
  * @returns {Promise<Meal[]>}
  */
 export async function getAllOpenMensaMealsForCanteens(canteenIds, startDate) {
+    /** @type {Meal[]} */
     let allMeals = [];
     for (const canteenId of canteenIds) {
         const meals = await getAllOpenMensaMeals(canteenId, startDate);

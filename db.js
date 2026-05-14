@@ -254,7 +254,7 @@ export function insertTransList(transList, cardnumber) {
  * @param {String|null} cardnumber 
  * @returns {{id: number, mandantId: number, transFullId: string, datum: Date, ortName: string, kaName: string, typName: string, zahlBetrag: number, dateiablageId: number|null, bonusInfo: string|null, cardnumber: string}[]}
  */
-export function getTransList(cardnumber) {
+export function getTransList(cardnumber = null) {
     if (!cardnumber) {
         var stmt = db.prepare('SELECT * FROM trans');
         var results = stmt.all();
@@ -323,7 +323,7 @@ export function insertTransPosList(transPosList, cardnumber) {
  * @param {string|null} cardnumber - Card number to filter by, or null/undefined for all records.
  * @returns {TransPos[]}
  */
-export function getTransPosList(cardnumber) {
+export function getTransPosList(cardnumber = null) {
     if (!cardnumber) {
         var stmt = db.prepare('SELECT * FROM transpos');
         var results = stmt.all();
@@ -451,11 +451,11 @@ export function insertOpenMensaMeals(meals, canteenId, date) {
 /**
  * Returns all distinct meal dates for a canteen on or after the given start date.
  * @param {number} canteenId - OpenMensa canteen id.
- * @param {string|null} startDate - ISO date string lower bound (inclusive). Defaults to today.
+ * @param {Date|null} startDate - ISO date string lower bound (inclusive). Defaults to today.
  * @returns {Date[]}
  */
 export function getOpenMensaDays(canteenId, startDate = null) {
-    const startDateObj = startDate ? new Date(startDate) : new Date();
+    const startDateObj = startDate ? startDate : new Date();
     const location = getMensaLocationByOpenMensaId(canteenId);
     if (!location) throw new Error(`Mensa location not found for OpenMensa id: ${canteenId}`);
     var mensaLocationId = location.id;
@@ -490,7 +490,7 @@ export function getAllOpenMensaMeals() {
  * Returns all meals for a specific canteen and date (OpenMensa format).
  * @param {number} canteenId - OpenMensa canteen id.
  * @param {string} date - ISO date string.
- * @returns {{id: number, name: string, notes: string[]|null, prices: Object|null, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, canteenId: number}[]}
+ * @returns {{id: number, name: string, notes: string[], prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, canteenId: number}[]}
  */
 export function getOpenMensaMeals(canteenId, date) {
     const dateObj = new Date(date);
@@ -503,8 +503,8 @@ export function getOpenMensaMeals(canteenId, date) {
         return results.map(/** @param {any} r */ r => ({
             id: r.id,
             name: r.name,
-            notes: r.notes ? JSON.parse(r.notes) : null,
-            prices: r.prices ? JSON.parse(r.prices) : null,
+            notes: r.notes ? JSON.parse(r.notes) : [],
+            prices: r.prices ? JSON.parse(r.prices) : {students: null, employees: null, others: null, pupils: null},
             category: r.category,
             date: new Date(r.date),
             locationName: r.locationName,
@@ -520,7 +520,7 @@ export function getOpenMensaMeals(canteenId, date) {
 
 /**
  * Inserts or updates meals from the Mensa XML feed.
- * @param {{locationId: number, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]} meals - Meals to upsert.
+ * @param {{type: string, locationId: string, date: Date, name: string, category: string, internalCategory: string, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}, components: string[], tags: {name: string, type: string}[]}[]} meals - Meals to upsert.
  * @returns {void}
  */
 export function insertMensaXMLMeals(meals) {
@@ -530,7 +530,7 @@ export function insertMensaXMLMeals(meals) {
         ON CONFLICT(mensa_location_id, date, name, category) DO UPDATE SET name = excluded.name, category = excluded.category, internalCategory = excluded.internalCategory, prices = excluded.prices, components = excluded.components, tags = excluded.tags
     `);
     for (const meal of meals) {
-        const loc = getMensaLocationByMensaXMLId(meal.locationId);
+        const loc = getMensaLocationByMensaXMLId(Number(meal.locationId));
         if (!loc) throw new Error(`Mensa location not found for XML id: ${meal.locationId}`);
         var mensaLocationId = loc.id;
         stmt.run(
@@ -541,7 +541,7 @@ export function insertMensaXMLMeals(meals) {
             meal.internalCategory,
             meal.prices ? JSON.stringify(meal.prices) : null,
             meal.components ? JSON.stringify(meal.components) : null,
-            meal.tags ? JSON.stringify(meal.tags) : null
+            meal.tags ? JSON.stringify(meal.tags.map(tag => tag.name)) : null
         );
     }
 }

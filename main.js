@@ -1,14 +1,17 @@
+// @ts-check
+
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
-import { getAuthTokenWithDays, getTransactions, getTransactionPositions, getOpenMensaCanteens, getAllOpenMensaMealsForCanteensDuration, getAllOpenMensaMealsForCanteens, getMensaXML } from './api.js';
 import { updateMealLookup, parseMensaXML, fetchTransAndTranspos, fetchOpenMensaMeals, fetchMensaXMLMeals } from './logic.js';
-import { insertMensaXMLMeals, insertOpenMensaMeals, insertTransList, insertTransPosList, getCards, insertCard, setupInfisicalClient, getMensaXMLIds, getMissingMensaXMLDays } from './db.js'
+import { getCards, insertCard, setupInfisicalClient } from './db.js'
 
 (async () => {
     await setupInfisicalClient();
     try {
-        await insertCard(process.env.CARD_NUMBER, process.env.CARD_PASSWORD);
+        if (process.env.CARD_NUMBER && process.env.CARD_PASSWORD) {
+            await insertCard(process.env.CARD_NUMBER, process.env.CARD_PASSWORD);
+        }
 
         var pastDate = new Date();
 
