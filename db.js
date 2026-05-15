@@ -694,13 +694,13 @@ export function getCardMeals(cardnumber, date = null) {
 
     // for each transaction, find meals with matching internal category, date and location
     var meals = [];
-    const mealStmt = db.prepare('SELECT DISTINCT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date >= ? AND meals.date <= ? AND meals.internalCategory = ?');
+    const mealStmt = db.prepare('SELECT DISTINCT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date >= ? AND meals.date <= ? AND (meals.internalCategory = ? OR meals.category = ? OR meals.name = ?)');
     for (const trans of transactions) {
         var startOfDay = new Date(trans.datum);
         startOfDay.setHours(0, 0, 0, 0);
         var endOfDay = new Date(trans.datum);
         endOfDay.setHours(23, 59, 59, 999);
-        const mealResults = mealStmt.all(trans.mensaLocationId, startOfDay.getTime(), endOfDay.getTime(), trans.internalName);
+        const mealResults = mealStmt.all(trans.mensaLocationId, startOfDay.getTime(), endOfDay.getTime(), trans.internalName, trans.internalName, trans.internalName);
         meals.push(...mealResults.map(/** @param {any} r */ r => ({
             id: r.id,
             name: r.name,
