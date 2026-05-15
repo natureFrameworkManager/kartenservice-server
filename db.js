@@ -629,17 +629,16 @@ export function getMensaXMLMeals(canteenId, date) {
  */
 export function getMeals(date = null, canteenId = null, internalCategory = null) {
     var dateObj = date ? new Date(date) : null;
-    var mensaLocationId = canteenId ? getMensaLocationByMensaXMLId(canteenId)?.id : null;
-    var sql = "meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
+    var sql = "SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
     /** @type {any[]} */
     var params = [];
     if (dateObj) {
         sql += " AND date = ?";
         params.push(dateObj.getTime());
     }
-    if (mensaLocationId) {
+    if (canteenId) {
         sql += " AND mensa_location_id = ?";
-        params.push(mensaLocationId);
+        params.push(canteenId);
     }
     if (internalCategory) {
         sql += " AND internalCategory = ?";

@@ -85,13 +85,12 @@ fastify.get('/meals/:date/:canteenId', async (request, reply) => {
 /** Returns a single meal by date, canteen, and meal name. */
 fastify.get('/meals/:date/:canteenId/:mealName', async (request, reply) => {
     const { date, canteenId, mealName } = /** @type {ParamsDateCanteenMeal} */ (request.params);
-    const meals = getMeals(date, Number(canteenId));
-    const meal = meals.find(m => m.name === mealName);
-    if (!meal) {
+    const meals = getMeals(date, Number(canteenId), mealName);
+    if (meals.length === 0) {
         reply.code(404).send({ error: 'Not found' });
         return;
     }
-    return meal;
+    return meals;
 });
 
 /** Returns all meals matched to the transactions of the authenticated card. */
