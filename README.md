@@ -6,3 +6,6 @@
 - Improve file structure 
 - Add docker image for easy deployment
 - Add documentation and readme content
+
+## Notes:
+- Use SSE for sync updates
