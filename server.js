@@ -7,7 +7,7 @@ dotenv.config({ quiet: true });
 
 import { getAuthToken } from './api.js';
 import { updateMealLookup, fetchOpenMensaMeals, fetchMensaXMLMeals, fetchTransAndTranspos } from './logic.js';
-import { getCard, insertCard, updateCard, deleteCard, setupInfisicalClient, getTransList, getTransPosList, getMeals, getCardMeals } from './db.js';
+import { getCard, insertCard, updateCard, deleteCard, setupInfisicalClient, getTransList, getTransPosList, getMeals, getCardMeals, getMensaLocations, insertMensaLocation, updateMensaLocation, updateInternalCategory } from './db.js';
 
 /**
  * @typedef {{ date: string }} ParamsDate
@@ -24,7 +24,7 @@ await setupInfisicalClient();
 const fastify = Fastify({ logger: true });
 fastify.register(cors, {
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 });
 
 /**
@@ -166,7 +166,8 @@ fastify.post('/card', async (request, reply) => {
     }
     const existing = await getCard(cardNumber);
     if (existing) {
-        reply.code(409).send({ error: 'Card already exists' });
+        await updateCard(cardNumber, password);
+        reply.code(200).send({ message: 'Card already exists; password updated', warning: 'Card was already registered' });
         return;
     }
     await insertCard(cardNumber, password);
@@ -235,6 +236,74 @@ fastify.post('/fetch/kartenservice', { preHandler: authenticate }, async (reques
         .then(() => updateMealLookup())
         .catch(err => fastify.log.error('Error fetching kartenservice data:', err));
     reply.code(202).send({ message: 'Kartenservice fetch triggered' });
+});
+
+/** Returns all mensa locations. */
+fastify.get('/locations', async (request, reply) => {
+    return getMensaLocations();
+});
+
+/** Adds a new mensa location. At least one of openMensaId or mensaXMLId must be provided. */
+fastify.post('/locations', async (request, reply) => {
+    const { name, internalName, openMensaId, mensaXMLId } = /** @type {any} */ (request.body) ?? {};
+    if (!name) {
+        reply.code(400).send({ error: 'name is required' });
+        return;
+    }
+    if (openMensaId == null && mensaXMLId == null) {
+        reply.code(400).send({ error: 'At least one of openMensaId or mensaXMLId is required' });
+        return;
+    }
+    try {
+        const location = insertMensaLocation(name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null);
+        reply.code(201).send(location);
+    } catch (/** @type {any} */ err) {
+        if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            reply.code(409).send({ error: 'A location with that openMensaId or mensaXMLId already exists' });
+        } else {
+            throw err;
+        }
+    }
+});
+
+/** Updates all fields of an existing mensa location. */
+fastify.put('/locations/:id', async (request, reply) => {
+    const { id } = /** @type {{id: string}} */ (request.params);
+    const { name, internalName, openMensaId, mensaXMLId } = /** @type {any} */ (request.body) ?? {};
+    if (!name) {
+        reply.code(400).send({ error: 'name is required' });
+        return;
+    }
+    if (openMensaId == null && mensaXMLId == null) {
+        reply.code(400).send({ error: 'At least one of openMensaId or mensaXMLId is required' });
+        return;
+    }
+    try {
+        const updated = updateMensaLocation(Number(id), name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null);
+        if (!updated) {
+            reply.code(404).send({ error: 'Location not found' });
+            return;
+        }
+        reply.code(200).send({ message: 'Location updated' });
+    } catch (/** @type {any} */ err) {
+        if (err.message && err.message.includes('UNIQUE constraint failed')) {
+            reply.code(409).send({ error: 'A location with that openMensaId or mensaXMLId already exists' });
+        } else {
+            throw err;
+        }
+    }
+});
+
+/** Updates the internalCategory of a single meal. */
+fastify.patch('/meals/:id', async (request, reply) => {
+    const { id } = /** @type {{id: string}} */ (request.params);
+    const { internalCategory } = /** @type {any} */ (request.body) ?? {};
+    if (internalCategory === undefined) {
+        reply.code(400).send({ error: 'internalCategory is required' });
+        return;
+    }
+    updateInternalCategory(Number(id), internalCategory);
+    reply.code(200).send({ message: 'Meal updated' });
 });
 
 try {

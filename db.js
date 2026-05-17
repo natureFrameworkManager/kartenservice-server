@@ -772,3 +772,32 @@ export function updateInternalCategory(mealId, internalCategory) {
     const stmt = db.prepare('UPDATE meals SET internalCategory = ? WHERE id = ?');
     stmt.run(internalCategory, mealId);
 }
+
+/**
+ * Inserts a new mensa location into the database.
+ * @param {string} name
+ * @param {string|null} internalName
+ * @param {number|null} openMensaId
+ * @param {number|null} mensaXMLId
+ * @returns {{id: number, openMensaId: number|null, mensaXMLId: number|null, name: string, internalName: string|null}}
+ */
+export function insertMensaLocation(name, internalName, openMensaId, mensaXMLId) {
+    const stmt = db.prepare('INSERT INTO mensa_locations (name, internalName, openMensaId, mensaXMLId) VALUES (?, ?, ?, ?)');
+    const result = stmt.run(name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null);
+    return { id: Number(result.lastInsertRowid), name, internalName: internalName ?? null, openMensaId: openMensaId ?? null, mensaXMLId: mensaXMLId ?? null };
+}
+
+/**
+ * Updates an existing mensa location in the database.
+ * @param {number} id
+ * @param {string} name
+ * @param {string|null} internalName
+ * @param {number|null} openMensaId
+ * @param {number|null} mensaXMLId
+ * @returns {boolean} true if a row was updated, false if not found
+ */
+export function updateMensaLocation(id, name, internalName, openMensaId, mensaXMLId) {
+    const stmt = db.prepare('UPDATE mensa_locations SET name = ?, internalName = ?, openMensaId = ?, mensaXMLId = ? WHERE id = ?');
+    const result = stmt.run(name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null, id);
+    return result.changes > 0;
+}
