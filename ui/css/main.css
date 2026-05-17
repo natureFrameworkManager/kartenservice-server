@@ -1,0 +1,384 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@import "./fonts.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
+    --radius-xs: 3px;
+    --radius-sm: 5px;
+    --radius: 8px;
+    --shadow-sm: 0 1px 3px rgba(26, 26, 46, 0.06);
+    --shadow-md: 0 4px 16px rgba(26, 26, 46, 0.08);
+    --shadow-lg: 0 12px 40px rgba(26, 26, 46, 0.12);
+    --color-thumb: #e0d8cf;
+    --color-border: oklch(0.872 0.01 258.338);
+    --color-background: oklch(0.985 0.002 247.839);
+    --color-text-background: oklch(0.21 0.034 264.665);
+    --color-surface-background: #fff;
+    --color-navigation-hover-background: oklch(0.967 0.003 264.542);
+    --color-navigation-active-background: oklch(0.546 0.245 262.881);
+    --color-text-navigation-active: #fff;
+    --color-surface: oklch(0.9651 0.0165 259.42);
+    --color-surface-border: oklch(0.872 0.01 258.338);
+    --color-primary: oklch(0.546 0.245 262.881);
+    --color-primary-hover: oklch(0.488 0.243 264.376);
+    --color-text-primary: #fff;
+}
+
+@layer theme {
+    :root,
+    :host {
+        @variant dark {
+            --color-thumb: #2e2c4a;
+            --color-border: oklch(0.274 0.006 286.033);
+            --color-background: oklch(14.1% 0.005 285.823);
+            --color-text-background: oklch(0.967 0.001 286.375);
+            --color-surface-background: oklch(21% 0.006 285.885);
+            --color-navigation-hover-background: oklch(0.274 0.006 286.033);
+            --color-navigation-active-background: oklch(0.378 0.077 168.94);
+            --color-text-navigation-active: oklch(0.845 0.143 164.978);
+            --color-surface: oklch(0.274 0.006 286.033);
+            --color-surface-border: oklch(0.37 0.013 285.805);
+            --color-primary: oklch(0.596 0.145 163.225);
+            --color-primary-hover: oklch(0.696 0.17 162.48);
+            --color-text-primary: #fff;
+        }
+    }
+}
+
+html {
+    @apply antialiased;
+}
+
+body {
+    @apply min-h-screen bg-background text-text-background font-sans;
+}
+
+a {
+    @apply text-blue-600 dark:text-blue-400 hover:underline;
+}
+
+button {
+    @apply bg-primary text-text-primary rounded px-4 py-2 hover:bg-primary-hover cursor-pointer;
+}
+
+::-webkit-scrollbar {
+    @apply w-1.25 h-1.25;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply rounded-xs bg-thumb;
+}
+
+.input-con {
+    @apply flex flex-col gap-1;
+}
+.input-con input, .input-con select {
+    @apply bg-surface border-border rounded px-3 py-1.5 text-sm;
+}
+.input-con select {
+    @apply pr-8;
+}
+.input-con label {
+    @apply text-xs text-gray-500 ml-2;
+}
+
+aside {
+    @apply bg-surface-background shadow dark:shadow-none fixed left-0 w-64 flex flex-col h-full overflow-y-auto;
+}
+
+aside span#app-title {
+    @apply h-14 ml-3 flex items-center font-bold px-3;
+}
+aside div#host-con {
+    @apply h-16 flex items-center w-full gap-1 border-b border-border pb-3 px-3;
+}
+aside div#host-con input {
+    @apply px-2 rounded border border-border bg-transparent text-sm w-full;
+}
+aside div#host-con span {
+    @apply cursor-pointer text-[20px];
+}
+
+aside nav {
+    @apply mt-1 flex flex-col gap-1 p-3;
+}
+aside nav span {
+    @apply px-3 py-2 cursor-pointer rounded hover:bg-navigation-hover-background;
+}
+aside nav span.active {
+    @apply bg-navigation-active-background text-text-navigation-active;
+}
+
+aside div#nav-bottom {
+    @apply bottom-0 relative mt-auto p-3;
+}
+aside div#nav-bottom div#login-con p {
+    @apply text-xs text-gray-500;
+}
+aside div#nav-bottom div#login-con p a {
+    @apply text-blue-400 dark:text-sky-700 hover:underline;
+}
+aside div#nav-bottom div#login-con {
+    @apply flex flex-col gap-3;
+}
+
+aside div#nav-bottom div#action-con {
+    @apply flex flex-col gap-3 bg-surface p-2 mb-4 rounded border border-border;
+}
+aside div#nav-bottom div#action-con p {
+    @apply text-sm/6;
+}
+aside div#nav-bottom div#user-con {
+    @apply flex items-center gap-1 justify-between;
+}
+aside div#nav-bottom div#user-con span {
+    @apply hover:bg-primary-hover cursor-pointer px-3 py-2 rounded;
+}
+aside div#nav-bottom div#user-con button.material-icons-round {
+    @apply cursor-pointer text-[20px] p-2;
+}
+
+div h1 {
+    @apply text-2xl font-bold;
+}
+div h2 {
+    @apply mb-4 text-gray-500;
+}
+
+#meals-view div#meals-query {
+    @apply mb-4 flex w-full gap-2;
+}
+#meals-view div#meals-query .input-con {
+    @apply w-full;
+}
+#meals-view div#location-list {
+    @apply flex flex-col gap-y-6;
+}
+#meals-view div#location-list div.location-con h3 {
+    @apply text-lg w-full border-b border-border pb-1 pl-3 mb-3;
+}
+#meals-view div.meals-list {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fill, 320px);
+}
+#meals-view div.meal-con {
+    @apply w-full h-fit bg-surface-background border border-border shadow dark:shadow-none rounded p-3 flex flex-col gap-0.5;
+}
+#meals-view div.meal-con div.meal-components-con {
+    @apply flex text-xs text-gray-500 overflow-x-clip;
+}
+#meals-view div.meal-con div.meal-components-con span {
+    @apply text-nowrap;
+}
+#meals-view div.meal-con div.meal-components-con span:not(:last-child) {
+    @apply mr-2 border-r border-primary pr-2;
+}
+#meals-view div.meal-con div.meal-input {
+    @apply mt-2 flex items-center gap-2;
+}
+#meals-view div.meal-con div.meal-input label {
+    @apply text-gray-500 text-sm text-nowrap;
+}
+#meals-view div.meal-con div.meal-input input {
+    @apply bg-surface border-border rounded px-2 py-0.5 text-sm;
+}
+#meals-view div.meal-con div.meal-bottom {
+    @apply mt-3 flex items-center justify-between gap-2;
+}
+#meals-view div.meal-con span.meal-category {
+    @apply text-sm bg-primary text-text-primary rounded px-2 py-0.5 w-fit;
+}
+#meals-view div.meal-con span.meal-price {
+    @apply text-sm text-primary;
+}
+#meals-view div.meal-con details {
+    @apply text-gray-500 text-xs mt-2;
+}
+#meals-view div.meal-con details summary {
+    @apply cursor-pointer text-sm;
+}
+#meals-view div.meal-con details div.meal-prices {
+    @apply flex gap-x-3 flex-wrap mt-1;
+}
+#meals-view div.meal-con details div.meal-prices span:not(:last-child) {
+    @apply border-r border-gray-500 pr-3;
+}
+#meals-view div.meal-con details div.meal-notes {
+    @apply mt-2 text-sm;
+}
+#meals-view div.meal-con details div.meal-tags {
+    @apply mt-2 flex flex-col gap-1 w-full;
+}
+
+#location-view div#location-add-con {
+    @apply flex items-end gap-2 w-full;
+}
+#location-view div#location-add-con .input-con {
+    @apply w-full;
+}
+#location-view div#location-add-con button {
+    @apply text-nowrap;
+}
+#location-view div#location-list {
+    @apply mt-6 w-full border border-border rounded overflow-x-auto;
+}
+#location-view div#location-list table {
+    @apply border-collapse w-full;
+}
+#location-view div#location-list thead {
+    @apply bg-surface-background text-text-background border-b border-border;
+}
+#location-view div#location-list tr:not(:last-child) {
+    @apply border-b border-border;
+}
+#location-view div#location-list th {
+    @apply text-gray-500 text-left text-sm font-normal first:w-full w-fit px-4 py-3 text-nowrap;
+}
+#location-view div#location-list tr td:not(:first-child) {
+    @apply text-gray-500 text-sm;
+}
+#location-view div#location-list td {
+    @apply w-fit last:items-end px-4 py-2 text-nowrap;
+}
+#location-view div#location-list td:not(:last-child) {
+    @apply  border-r border-border;
+}
+#location-view div#location-list button {
+    @apply text-primary bg-transparent hover:text-text-primary hover:bg-primary px-2 py-1;
+}
+
+#transaction-view div#transaction-query {
+    @apply flex gap-2 items-end w-full;
+}
+#transaction-view div#transaction-query .input-con {
+    @apply w-full;
+}
+#transaction-view div#transaction-query button {
+    @apply text-nowrap;
+}
+#transaction-view div#transaction-list {
+    @apply mt-6 w-full overflow-x-auto;
+}
+#transaction-view div.transaction-day-con {
+    @apply rounded border border-border bg-surface-background mb-6; 
+}
+#transaction-view div.transaction-day-con div.transaction-day-header {
+    @apply bg-surface text-text-background px-4 py-3 rounded-t-lg flex items-center gap-2 justify-between border-b border-border ;
+}
+#transaction-view div.transaction-day-con div.transaction-day-header span.transaction-day-total {
+    @apply text-primary;
+}
+#transaction-view div.transaction-con {
+    @apply p-4; 
+}
+#transaction-view div.transaction-con:not(:last-child) {
+    @apply border-b border-border;
+}
+#transaction-view div.transaction-con div.transaction-con-header {
+    @apply flex justify-between items-start gap-2 w-full; 
+}
+#transaction-view div.transaction-con div.transaction-con-header > div.info-con {
+    @apply flex flex-col
+}
+#transaction-view div.transaction-con div.transaction-con-header > div.info-con > div.horizontal-con {
+    @apply flex gap-x-3 items-baseline
+}
+#transaction-view div.transaction-con div.transaction-con-header > div.info-con > div.horizontal-con span.type-span, 
+#transaction-view div.transaction-con div.transaction-con-header > div.info-con > div.horizontal-con div.type-con {
+    @apply text-gray-500 flex items-center gap-x-1;
+}
+#transaction-view div.transaction-con div.transaction-con-header div.location-con {
+    @apply flex gap-x-2 text-sm text-gray-500;
+}
+#transaction-view div.transaction-con div.transaction-con-header > span {
+    @apply text-primary font-bold; 
+}
+#transaction-view div.transaction-con div.transaction-position-con {
+    @apply ml-4 mt-2 border-s-2 border-border pl-4 flex flex-col gap-y-3;
+}
+#transaction-view div.transaction-position-con div.transaction-position {
+    @apply grid grid-cols-3;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div:not(.transaction-position-meal-reference):not(.missing-transaction-position-meal-reference) {
+    @apply flex flex-col gap-y-1
+}
+#transaction-view div.transaction-position-con div.transaction-position > div:not(.transaction-position-meal-reference):not(.missing-transaction-position-meal-reference) span:last-child {
+    @apply text-gray-500 text-xs;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference {
+    @apply flex gap-x-2 items-baseline;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:first-child {
+    @apply text-xs text-gray-500;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:last-child {
+    @apply text-sm bg-primary text-text-primary rounded px-2 py-0.5 w-fit
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference {
+    @apply flex gap-x-2 items-center w-full;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference select {
+    @apply bg-surface border-border rounded px-3 py-1.5 text-sm pr-8 w-full; 
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference button {
+    @apply text-nowrap px-2 py-1;
+}
+#transaction-view div.transaction-position-con div.transaction-position > span {
+    @apply text-right text-primary text-sm
+}
+
+#sync-view h3 {
+    @apply text-xl font-bold mt-6 mb-3;
+}
+#sync-view div.horizontal-sources-con {
+    @apply grid grid-cols-3 gap-6;
+}
+#sync-view div.horizontal-sync-con {
+    @apply grid grid-cols-2 gap-6;
+}
+#sync-view div.horizontal-sources-con > div,
+#sync-view div.horizontal-sync-con > div {
+    @apply flex flex-col gap-2 bg-surface-background p-4 rounded border border-border h-fit;
+}
+#sync-view div.horizontal-sources-con > div h4,
+#sync-view div.horizontal-sync-con > div h4 {
+    @apply text-lg font-medium;
+}
+#sync-view div.horizontal-sources-con > div > div {
+    @apply flex gap-x-3 gap-y-1 text-xs text-gray-500 text-nowrap flex-wrap;
+}
+#sync-view div.horizontal-sources-con > div > p {
+    @apply text-sm text-gray-500;
+}
+#sync-view div.horizontal-sources-con > div > button,
+#sync-view div.horizontal-sync-con > div > button {
+    @apply mt-2;
+}
+
+dialog {
+    @apply bg-surface text-text-background p-6 rounded shadow-lg dark:shadow-none flex flex-col gap-4;
+}
+dialog h1 {
+    @apply text-xl font-bold;
+}
+dialog p {
+    @apply text-sm/6;
+}
+dialog div {
+    @apply flex gap-2 w-full
+}
+dialog div button {
+    @apply w-full first:bg-red-600 first:text-white first:hover:bg-red-700 last:bg-gray-300 last:text-gray-700 last:hover:bg-gray-400;
+}
+
+body > div {
+    @apply ml-64 p-6;
+}

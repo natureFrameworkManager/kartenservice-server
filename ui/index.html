@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="stylesheet" href="css/css.css">
+
+        <title>Kartenservice Server Management</title>
+    </head>
+    <body>
+        <aside>
+            <span id="app-title">Kartenservice</span>
+            <div id="host-con"><input type="text" name="host" id="host-input" placeholder="Server Host URL" value="localhost" ><span class="material-icons-round">rotate_left</span></div>
+
+            <nav>
+                <span class="active">Essensangebot</span>
+                <span>Standorte</span>
+                <span>Transaktionen</span>
+                <span>Synchronisation</span>
+            </nav>
+
+            <div id="nav-bottom">
+                <div id="login-con" style="display: none;">
+                    <p>
+                        Nutze deine Anmeldedaten von <a href="https://kartenservice.studentenwerk-leipzig.de" target="_blank">kartenservice.studentenwerk-leipzig.de</a>.<br>
+                        Du musst Anmeldedaten für den Kartenservice (AutoLoad) besitzen, um deine Transaktionsdaten zu synchronisieren.<br>
+                        Alle Details zum Erhalt der Anmeldedaten findest du auf der <a href="https://www.studentenwerk-leipzig.de/mensen-cafeterien/autoload/" target="_blank">Webseite des Studentenwerks Leipzig</a>.
+                    </p>
+                    <div class="input-con">
+                        <input type="text" name="card-id" id="card-id-input" placeholder="36159433725730052">
+                        <label for="">Karten-Nummer</label>
+                    </div>
+                    <div class="input-con">
+                        <input type="password" name="password" id="password-input">
+                        <label for="">Password</label>
+                    </div>
+                    <button>Registrieren/Anmelden</button>
+                </div>
+                <div id="action-con">
+                    <p>
+                        Dein Password wird durch erneutes Anmelden ändern.<br>
+
+                        Dabei werden keine historischen Transaktionsdaten gelöscht.
+                    </p>
+                    <button>Karte löschen</button class="delete">
+                </div>
+                <div id="user-con"><span>36159433725730052</span><button class="material-icons-round">logout</button></div>
+            </div>
+        </aside>
+        <div id="meals-view">
+            <h1>Essensangebot</h1>
+            <h2>das auf dem Server gesichert wurden</h2>
+
+            <div id="meals-query"> <!-- auto load on input -->
+                <div class="input-con">
+                    <label for="">Datum</label>
+                    <input type="date" name="date" id="date-input">
+                </div>
+                <div class="input-con">
+                    <label for="">Standort</label>
+                    <select name="location" id="location-input">
+                        <option value="">Alle Standorte</option>
+                    </select>
+                </div>
+            </div>
+            <div id="location-list">
+                <div class="location-con">
+                    <h3>Mensa am Park</h3>
+                    <div class="meals-list">
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+                <div class="location-con">
+                    <h3>Mensa am Park</h3>
+                    <div class="meals-list">
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                        <div class="meal-con">
+                            <span class="meal-name">Schellfisch im Cornflakespanade</span>
+                            <div class="meal-components-con">
+                                <span>Thai Sweet-Chillisoße</span>
+                                <span>gebratene Mie-Nudeln mit Gemüse</span>
+                            </div>
+                            <div class="meal-input">
+                                <label for="">Int. Kateg.</label>
+                                <input type="text" placeholder="-" value="Essen D">
+                            </div>
+                            <div class="meal-bottom">
+                                <span class="meal-category">Fischgericht</span>
+                                <span class="meal-price">4,10 €</span>
+                            </div>
+                            <details class="meal-detail-con">
+                                <summary>Details</summary>
+                                <div class="meal-details">
+                                    <div class="meal-prices">
+                                        <span>Studierende: <span class="meal-price-student">4,10 €</span></span>
+                                        <span>Angestellte: <span class="meal-price-employee">5,20 €</span></span>
+                                        <span>Gäste: <span class="meal-price-guest">6,30 €</span></span>
+                                    </div>
+                                    <div class="meal-notes"></div>
+                                    <div class="meal-tags">
+                                        <span>Tags:</span>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Soja</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Allergen:</span>
+                                            <span>Milch/ Milchzucker</span>
+                                        </div>
+                                        <div class="meal-tag-con">
+                                            <span>Zusatzstoff:</span>
+                                            <span>Konservierungsstoff</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="location-view">
+            <h1>Standort</h1>
+            <h2>die dem Server bekannt sind</h2>
+            
+            <div id="location-add-con">
+                <div class="input-con">
+                    <label for="">Name</label>
+                    <input type="text" name="name" id="location-name-input">
+                </div>
+                <div class="input-con">
+                    <label for="">Interner Name (wie in Transaktionen)</label>
+                    <input type="text" name="internal-name" id="location-internal-name-input">
+                </div>
+                <div class="input-con">
+                    <label for="">OpenMensa-ID</label>
+                    <input type="text" name="openmensa-id" id="location-openmensa-id-input">
+                </div>
+                <div class="input-con">
+                    <label for="">Studenwerk-ID</label>
+                    <input type="text" name="studenwerk-id" id="location-studenwerk-id-input">
+                </div>
+                <button id="add-location-btn">Neuen Standort speichern</button>
+            </div>
+            <div id="location-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Interner Name</th>
+                            <th>OpenMensa-ID</th>
+                            <th>Studenwerk-ID</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Mensa am Park</td>
+                            <td>mensa_am_park</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td><button>Bearbeiten</button></td>
+                        </tr>
+                        <tr>
+                            <td>Mensa am Park</td>
+                            <td>mensa_am_park</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td><button>Bearbeiten</button></td>
+                        </tr>
+                        <tr>
+                            <td>Mensa am Park</td>
+                            <td>mensa_am_park</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td><button>Bearbeiten</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="transaction-view">
+            <h1>Transaktionen</h1>
+            <h2>für deine Karte die gespeichert sind</h2>
+
+            <div id="transaction-query"> <!-- auto load on input -->
+                <button>Alle Transaktionen</button>
+                <div class="input-con">
+                    <label for="">Spezifisches Datum</label>
+                    <input type="date" name="date" id="transaction-date-input">
+                </div>
+            </div>
+            
+            <div id="transaction-list">
+                <div class="transaction-day-con">
+                    <div class="transaction-day-header">
+                        <span class="transaction-date">12.05.2026</span>
+                        <span class="transaction-day-total">-8,05 €</span>
+                    </div>
+                    <div class="transaction-day-details">
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <span class="type-span">Verkauf</span>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-3.55 €</span>
+                            </div>
+                            <div class="transaction-position-con">
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen D</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1024]</span>
+                                        <span>Schellfisch in Cornflakespanade</span>
+                                        <span>Fischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1025]</span>
+                                        <span>Hähnchen in Currysauce</span>
+                                        <span>Fleischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="missing-transaction-position-meal-reference">
+                                        <select name="" class="meal-reference-select">
+                                            <option disabled selected>Essen zuordnen</option>
+                                            <option value="1025">Hähnchen in Currysauce</option>
+                                            <option value="1024">Schellfisch in Cornflakespanade</option>
+                                            <option value="1026">Veggie-Burger mit Pommes</option>
+                                        </select>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Karte</span>
+                                            <span>&middot;</span>
+                                            <span>Aufwertung</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-20,00 €</span>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                    <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Automat</span>
+                                            <span>&middot;</span>
+                                            <span>Automatenpfand</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>+0,25 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="transaction-day-con">
+                    <div class="transaction-day-header">
+                        <span class="transaction-date">12.05.2026</span>
+                        <span class="transaction-day-total">-8,05 €</span>
+                    </div>
+                    <div class="transaction-day-details">
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <span class="type-span">Verkauf</span>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-3.55 €</span>
+                            </div>
+                            <div class="transaction-position-con">
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen D</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1024]</span>
+                                        <span>Schellfisch in Cornflakespanade</span>
+                                        <span>Fischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1025]</span>
+                                        <span>Hähnchen in Currysauce</span>
+                                        <span>Fleischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="missing-transaction-position-meal-reference">
+                                        <select name="" class="meal-reference-select">
+                                            <option disabled selected>Essen zuordnen</option>
+                                            <option value="1025">Hähnchen in Currysauce</option>
+                                            <option value="1024">Schellfisch in Cornflakespanade</option>
+                                            <option value="1026">Veggie-Burger mit Pommes</option>
+                                        </select>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Karte</span>
+                                            <span>&middot;</span>
+                                            <span>Aufwertung</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-20,00 €</span>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                    <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Automat</span>
+                                            <span>&middot;</span>
+                                            <span>Automatenpfand</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>+0,25 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="transaction-day-con">
+                    <div class="transaction-day-header">
+                        <span class="transaction-date">12.05.2026</span>
+                        <span class="transaction-day-total">-8,05 €</span>
+                    </div>
+                    <div class="transaction-day-details">
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <span class="type-span">Verkauf</span>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-3.55 €</span>
+                            </div>
+                            <div class="transaction-position-con">
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen D</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1024]</span>
+                                        <span>Schellfisch in Cornflakespanade</span>
+                                        <span>Fischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1025]</span>
+                                        <span>Hähnchen in Currysauce</span>
+                                        <span>Fleischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="missing-transaction-position-meal-reference">
+                                        <select name="" class="meal-reference-select">
+                                            <option disabled selected>Essen zuordnen</option>
+                                            <option value="1025">Hähnchen in Currysauce</option>
+                                            <option value="1024">Schellfisch in Cornflakespanade</option>
+                                            <option value="1026">Veggie-Burger mit Pommes</option>
+                                        </select>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Karte</span>
+                                            <span>&middot;</span>
+                                            <span>Aufwertung</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-20,00 €</span>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                    <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Automat</span>
+                                            <span>&middot;</span>
+                                            <span>Automatenpfand</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>+0,25 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="transaction-day-con">
+                    <div class="transaction-day-header">
+                        <span class="transaction-date">12.05.2026</span>
+                        <span class="transaction-day-total">-8,05 €</span>
+                    </div>
+                    <div class="transaction-day-details">
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <span class="type-span">Verkauf</span>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-3.55 €</span>
+                            </div>
+                            <div class="transaction-position-con">
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen D</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="transaction-position-meal-reference">
+                                        <span>[1024]</span>
+                                        <span>Schellfisch in Cornflakespanade</span>
+                                        <span>Fischgericht</span>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                                <div class="transaction-position">
+                                    <div>
+                                        <span>Essen C</span>
+                                        <span>1x 2,00 €</span>
+                                    </div>
+                                    <div class="missing-transaction-position-meal-reference">
+                                        <select name="" class="meal-reference-select">
+                                            <option disabled selected>Essen zuordnen</option>
+                                            <option value="1025">Hähnchen in Currysauce</option>
+                                            <option value="1024">Schellfisch in Cornflakespanade</option>
+                                            <option value="1026">Veggie-Burger mit Pommes</option>
+                                        </select>
+                                        <button>Zuordnen</button>
+                                    </div>
+                                    <span>2,00 €</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                        <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Karte</span>
+                                            <span>&middot;</span>
+                                            <span>Aufwertung</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>-20,00 €</span>
+                            </div>
+                        </div>
+                        <div class="transaction-con">
+                            <div class="transaction-con-header">
+                                <div class="info-con">
+                                    <div class="horizontal-con">
+                                    <span>16:49</span>
+                                        <div class="type-con">
+                                            <span>Automat</span>
+                                            <span>&middot;</span>
+                                            <span>Automatenpfand</span>
+                                        </div>
+                                    </div>
+                                    <div class="location-con">
+                                        <span>Mensa am Park</span>
+                                        <span>&middot;</span>
+                                        <span>Cafeteria MaP (120)</span>
+                                    </div>
+                                </div>
+                                <span>+0,25 €</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="sync-view">
+            <h1>Synchronisation</h1>
+            <h2>der Daten des Servers</h2>
+
+            <h3>Datenquellen</h3>
+            <div class="horizontal-sources-con">
+                <div>
+                    <h4>OpenMensa.org</h4>
+                    <div>
+                        <a href="https://openmensa.org/">Webseite</a>
+                        <a href="https://docs.openmensa.org/api/v2/overview/">API-Dokumentation</a>
+                        <a href="https://github.com/mswart/openmensa-parsers/blob/master/parsers/leipzig.py">Leipzig Parser auf GitHub</a>
+                    </div>
+                    <p>
+                        Lädt Essenspläne der gespeicherten Standorte für alle verfügbaren Tage ab dem heutigen Tag aus OpenMensa.
+                    </p>
+                    <button id="sync-btn">Daten laden</button>
+                </div>
+                <div>
+                    <h4>Studentenwerk-Leipzig.de</h4>
+                    <div>
+                        <a href="https://www.studentenwerk-leipzig.de/mensen-cafeterien/speiseplan/">Webseite</a>
+                        <a href="https://studentenwerk-leipzig.de/XMLInterface/request?location=106&date=2026-05-13">XML-API</a>
+                    </div>
+                    <p>
+                        Lädt Essenspläne der gespeicherten Standorte aus dem Mensa-XML-Feed des Studentenwerks Leipzig.
+                        Da nur Daten für die letzten, aktuellen und kommenden Woche verfügbar sind, werden auch nur diese abgefragt.
+                    </p>
+                    <button id="sync-btn">Daten laden</button>
+                </div>
+                <div>
+                    <h4>Kartenservice.Studentenwerk-Leipzig.de</h4>
+                    <div>
+                        <a href="https://kartenservice.studentenwerk-leipzig.de/">Webseite</a>
+                        <a href="https://github.com/natureFrameworkManager/kartenservice">API-Dokumentation</a>
+                    </div>
+                    <p>
+                        Lädt Transaktionen und Positionen für deine Karte von dem Kartenservice des Studentenwerks Leipzig. <br>
+                        Die Transaktionshistorie ist sehr sicher auf 180 Tage durch den Kartenservice begrenzt, diese Grenze wird dynamisch berücksichtigt.
+                    </p>
+                    <button id="sync-btn">Daten laden</button>
+                </div>
+            </div>
+            
+            <h3>Synchronisation mit anderem Server</h3>
+            <div class="horizontal-sync-con">
+                <div>
+                    <h4>Essenangebot & Standorte</h4>
+                    <div class="input-con">
+                        <label for="">Server URL/IP</label>
+                        <input type="text" name="host" id="sync-host-input" placeholder="https://casparkroll.de">
+                    </div>
+                    <button id="sync-btn">Daten laden</button>
+                </div>
+                <div>
+                    <h4>Transaktionsdaten deiner Karte</h4>
+                    <div class="input-con">
+                        <label for="">Server URL/IP</label>
+                        <input type="text" name="host" id="sync-host-input" placeholder="https://casparkroll.de">
+                    </div>
+                    <button id="sync-btn">Daten laden</button>
+                </div>
+            </div>
+        </div>
+        <dialog>
+            <h1>Willst du deine Karte und alle historischen Transaktionsdaten wirklich löschen?</h1>
+            <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <div>
+                <button id="confirm-delete-card-btn">Karte löschen</button>
+                <button id="cancel-delete-card-btn">Abbrechen</button>
+            </div>
+        </dialog>
+        <script src="js.js"></script>
+    </body>
+</html>
