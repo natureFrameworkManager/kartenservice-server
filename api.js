@@ -345,12 +345,14 @@ export async function getAllOpenMensaMeals(canteenId, startDate) {
  * @param {Date} startDate 
  * @returns {Promise<Meal[]>}
  */
-export async function getAllOpenMensaMealsForCanteens(canteenIds, startDate) {
+export async function getAllOpenMensaMealsForCanteens(canteenIds, startDate, /** @type {((data: object) => any) | null} */ onProgress = null) {
     /** @type {Meal[]} */
     let allMeals = [];
-    for (const canteenId of canteenIds) {
+    for (let i = 0; i < canteenIds.length; i++) {
+        const canteenId = canteenIds[i];
         const meals = await getAllOpenMensaMeals(canteenId, startDate);
-        console.log(`Fetched ${meals.length} meals for canteen ${canteenId}, canteen progress: ${canteenIds.indexOf(canteenId) + 1}/${canteenIds.length}`);
+        console.log(`Fetched ${meals.length} meals for canteen ${canteenId}, canteen progress: ${i + 1}/${canteenIds.length}`);
+        onProgress?.({ step: 'fetch_canteen', message: `Fetched ${meals.length} meals for canteen ${canteenId}`, done: i + 1, total: canteenIds.length, count: meals.length });
         allMeals = allMeals.concat(meals);
     }
     return allMeals;

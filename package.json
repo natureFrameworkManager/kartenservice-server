@@ -6,6 +6,7 @@
   "main": "main.js",
   "dependencies": {
     "@fastify/cors": "^11.2.0",
+    "@fastify/sse": "^0.4.0",
     "@infisical/sdk": "^5.0.2",
     "@tailwindcss/cli": "^4.3.0",
     "dotenv": "^17.4.2",

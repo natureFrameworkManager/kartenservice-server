@@ -379,6 +379,27 @@ div h2 {
     @apply mt-2;
 }
 
+@keyframes sync-progress-indeterminate {
+    0% { transform: translateX(-150%); }
+    100% { transform: translateX(400%); }
+}
+.sync-progress-con {
+    @apply hidden w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden;
+}
+.sync-progress-con.active {
+    @apply block;
+}
+.sync-progress-con .sync-progress-bar {
+    @apply h-full bg-primary rounded transition-[width] duration-300;
+}
+.sync-progress-con.indeterminate .sync-progress-bar {
+    @apply w-2/5;
+    animation: sync-progress-indeterminate 1.5s ease-in-out infinite;
+}
+.sync-status {
+    @apply text-xs text-gray-500 min-h-4;
+}
+
 dialog {
     @apply bg-transparent m-auto;
 }

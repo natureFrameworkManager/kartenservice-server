@@ -1735,7 +1735,9 @@
                     <p>
                         Lädt Essenspläne der gespeicherten Standorte für alle verfügbaren Tage ab dem heutigen Tag aus OpenMensa.
                     </p>
-                    <button id="sync-btn">Daten laden</button>
+                    <button id="sync-open-mensa-btn">Daten laden</button>
+                    <div class="sync-progress-con" id="sync-open-mensa-progress"><div class="sync-progress-bar"></div></div>
+                    <span class="sync-status" id="sync-open-mensa-status"></span>
                 </div>
                 <div>
                     <h4>Studentenwerk-Leipzig.de</h4>
@@ -1747,7 +1749,9 @@
                         Lädt Essenspläne der gespeicherten Standorte aus dem Mensa-XML-Feed des Studentenwerks Leipzig.
                         Da nur Daten für die letzten, aktuellen und kommenden Woche verfügbar sind, werden auch nur diese abgefragt.
                     </p>
-                    <button id="sync-btn">Daten laden</button>
+                    <button id="sync-mensa-xml-btn">Daten laden</button>
+                    <div class="sync-progress-con" id="sync-mensa-xml-progress"><div class="sync-progress-bar"></div></div>
+                    <span class="sync-status" id="sync-mensa-xml-status"></span>
                 </div>
                 <div>
                     <h4>Kartenservice.Studentenwerk-Leipzig.de</h4>
@@ -1759,7 +1763,9 @@
                         Lädt Transaktionen und Positionen für deine Karte von dem Kartenservice des Studentenwerks Leipzig. <br>
                         Die Transaktionshistorie ist sehr sicher auf 180 Tage durch den Kartenservice begrenzt, diese Grenze wird dynamisch berücksichtigt.
                     </p>
-                    <button id="sync-btn">Daten laden</button>
+                    <button id="sync-kartenservice-btn">Daten laden</button>
+                    <div class="sync-progress-con" id="sync-kartenservice-progress"><div class="sync-progress-bar"></div></div>
+                    <span class="sync-status" id="sync-kartenservice-status"></span>
                 </div>
             </div>
             
@@ -1772,6 +1778,8 @@
                         <input type="text" name="host" id="sync-meals-host-input" placeholder="https://casparkroll.de">
                     </div>
                     <button id="sync-meals-btn">Daten laden</button>
+                    <div class="sync-progress-con" id="sync-meals-progress"><div class="sync-progress-bar"></div></div>
+                    <span class="sync-status" id="sync-meals-status"></span>
                 </div>
                 <div>
                     <h4>Transaktionsdaten deiner Karte</h4>
@@ -1780,6 +1788,8 @@
                         <input type="text" name="host" id="sync-transactions-host-input" placeholder="https://casparkroll.de">
                     </div>
                     <button id="sync-transactions-btn">Daten laden</button>
+                    <div class="sync-progress-con" id="sync-transactions-progress"><div class="sync-progress-bar"></div></div>
+                    <span class="sync-status" id="sync-transactions-status"></span>
                 </div>
             </div>
         </div>

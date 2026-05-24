@@ -139,13 +139,16 @@ export function parseMensaXML(xmldocument) {
  * @param {string} password 
  * @returns {Promise<{trans: any[], transpos: any[], pastDate: Date}>}
  */
-export async function fetchTransAndTranspos(cardnumber, password) {
+export async function fetchTransAndTranspos(cardnumber, password, /** @type {((data: object) => any) | null} */ onProgress = null) {
+    onProgress?.({ step: 'auth', message: 'Authenticating with Kartenservice...' });
     const { authToken, days } = await getAuthTokenWithDays(cardnumber, password);
     var today = new Date(new Date().setHours(0, 0, 0, 0));
     var pastDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
+    onProgress?.({ step: 'fetch_transactions', message: 'Fetching transactions...' });
     const transactions = await getTransactions(cardnumber, pastDate, today, authToken);
+    onProgress?.({ step: 'fetch_transpos', message: 'Fetching transaction positions...' });
     const transactionPositions = await getTransactionPositions(cardnumber, pastDate, today, authToken);
-
+    onProgress?.({ step: 'insert', message: `Inserting ${transactions.length} transactions and ${transactionPositions.length} positions...`, count: transactions.length + transactionPositions.length });
     insertTransList(transactions, cardnumber);
     insertTransPosList(transactionPositions, cardnumber);
 
@@ -164,9 +167,9 @@ export async function fetchTransAndTranspos(cardnumber, password) {
  * @param {Date} pastDate 
  * @returns {Promise<OpenMensaMeal[]>}
  */
-export async function fetchOpenMensaMeals(pastDate) {
+export async function fetchOpenMensaMeals(pastDate, /** @type {((data: object) => any) | null} */ onProgress = null) {
     const canteens = getOpenMensaIds();
-    const meals = await getAllOpenMensaMealsForCanteens(canteens, pastDate);
+    const meals = await getAllOpenMensaMealsForCanteens(canteens, pastDate, onProgress);
     return meals;
 }
 
@@ -187,7 +190,7 @@ export async function fetchOpenMensaMeals(pastDate) {
  * @param {Date} pastDate 
  * @returns {Promise<XMLMeal[]>}
  */
-export async function fetchMensaXMLMeals(pastDate) {
+export async function fetchMensaXMLMeals(pastDate, /** @type {((data: object) => any) | null} */ onProgress = null) {
     /** @type {XMLMeal[]} */
     var meals = [];
     // get date of monday of last week
@@ -222,6 +225,7 @@ export async function fetchMensaXMLMeals(pastDate) {
         }
         meals = meals.concat(canteenMeals);
         console.log(`Fetched ${canteenMeals.length} meals for canteen ${canteen}, canteen progess: ${index + 1}/${canteens.length}`);
+        onProgress?.({ step: 'fetch_canteen', message: `Fetched ${canteenMeals.length} meals for canteen ${canteen}`, done: index + 1, total: canteens.length, count: canteenMeals.length });
 
     }
     return meals;
