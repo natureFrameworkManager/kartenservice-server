@@ -1,10 +1,10 @@
 # Kartenservice - Server/Middleware
 
 ## ToDO:
+- Remove transaction history after card deletion
 - Add host sync for meals & locations and single card transactions for server-to-server sync
 - Add SSE for sync updates
-- Add ui for managing cards and meals
-  - Remove transaction history after card deletion
+- Add UI for managing cards and meals
   - Allow changes to internal categories from meal view
   - Save meal select in transaction view
   - Save new location
