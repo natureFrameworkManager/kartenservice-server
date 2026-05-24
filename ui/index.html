@@ -21,14 +21,14 @@
             </nav>
 
             <div id="nav-bottom">
-                <div id="login-con" style="display: none;">
+                <div id="login-con">
                     <p>
                         Nutze deine Anmeldedaten von <a href="https://kartenservice.studentenwerk-leipzig.de" target="_blank">kartenservice.studentenwerk-leipzig.de</a>.<br>
                         Du musst Anmeldedaten für den Kartenservice (AutoLoad) besitzen, um deine Transaktionsdaten zu synchronisieren.<br>
                         Alle Details zum Erhalt der Anmeldedaten findest du auf der <a href="https://www.studentenwerk-leipzig.de/mensen-cafeterien/autoload/" target="_blank">Webseite des Studentenwerks Leipzig</a>.
                     </p>
                     <div class="input-con">
-                        <input type="text" name="card-id" id="card-id-input" placeholder="36159433725730052">
+                        <input type="text" name="card-id" id="card-id-input" placeholder="36159433000000000">
                         <label for="">Karten-Nummer</label>
                     </div>
                     <div class="input-con">
@@ -37,15 +37,15 @@
                     </div>
                     <button>Registrieren/Anmelden</button>
                 </div>
-                <div id="action-con">
+                <div id="action-con" style="display: none;">
                     <p>
-                        Dein Password wird durch erneutes Anmelden ändern.<br>
+                        Dein Password kann durch erneutes Anmelden geändert werden.<br>
 
                         Dabei werden keine historischen Transaktionsdaten gelöscht.
                     </p>
                     <button>Karte löschen</button class="delete">
                 </div>
-                <div id="user-con"><span>36159433725730052</span><button class="material-icons-round">logout</button></div>
+                <div id="user-con" style="display: none;"><span>36159433725730052</span><button class="material-icons-round">logout</button></div>
             </div>
         </aside>
         <div id="meals-view">

@@ -7,8 +7,8 @@ document.documentElement.classList.toggle(
 
 let host = "localhost:3001";
 
-let cardnumber = "36159433725730052";
-let password = "6Vf6.ovbMk";
+let cardnumber;
+let password;
 
 let locations = [];
 
@@ -561,6 +561,35 @@ function getTransactionPositionHTML(position) {
     }
 }
 
+function displayUnauthenticatedTransactions() {
+    const transactionContainer = document.querySelector("#transaction-view div#transaction-list");
+    transactionContainer.innerHTML = `
+        <div class="unauthenticated-con">
+            <span>Bitte melde dich an, um deine Transaktionen zu sehen.</span>
+        </div>
+    `;
+}
+function transactionDiplayFlow() {
+    if (cardnumber && password) {
+        (async () => {
+            let transactions = await getTransactions(cardnumber, password);
+            console.log(transactions);
+            let transactionPositions = await getTransactionPositions(cardnumber, password);
+            console.log(transactionPositions);
+            let combinedTransactions = combineTransactionsWithPositions(transactions, transactionPositions);
+            console.log(combinedTransactions);
+            let cardMeals = await getCardMeals(cardnumber, password);
+            let combinedTransactionsWithMeals = await addMealsToCombinedTransactions(combinedTransactions, cardMeals);
+            console.log(combinedTransactionsWithMeals);
+            console.log(combinedTransactionsWithMeals.filter(t => t.positions.some(p => p.meals === undefined)))
+            displayTransactions(groupTransactionsByDay(combinedTransactionsWithMeals));
+            console.log(groupTransactionsByDay(combinedTransactionsWithMeals));
+        })();
+    } else {
+        displayUnauthenticatedTransactions();
+    }
+}
+
 function changeView(viewId) {
     document.querySelectorAll("body > div").forEach(div => {
         if (div.id === viewId) {
@@ -600,18 +629,7 @@ document.querySelector("dialog").style.display = "none";
     displayMeals(meals);
     console.log(meals);
 
-    let transactions = await getTransactions(cardnumber, password);
-    console.log(transactions);
-    let transactionPositions = await getTransactionPositions(cardnumber, password);
-    console.log(transactionPositions);
-    let combinedTransactions = combineTransactionsWithPositions(transactions, transactionPositions);
-    console.log(combinedTransactions);
-    let cardMeals = await getCardMeals(cardnumber, password);
-    let combinedTransactionsWithMeals = await addMealsToCombinedTransactions(combinedTransactions, cardMeals);
-    console.log(combinedTransactionsWithMeals);
-    console.log(combinedTransactionsWithMeals.filter(t => t.positions.some(p => p.meals === undefined)))
-    displayTransactions(groupTransactionsByDay(combinedTransactionsWithMeals));
-    console.log(groupTransactionsByDay(combinedTransactionsWithMeals));
+    transactionDiplayFlow();
 
     document.querySelector("#meals-view select#location-input").addEventListener("change", async (event) => {
         var dateValue = document.querySelector("#meals-view input#date-input").value;
@@ -630,5 +648,48 @@ document.querySelector("dialog").style.display = "none";
         meals = groupMealsByLocation(meals);
         displayMeals(meals);
         console.log(meals);
+    });
+
+    document.querySelector("#login-con button").addEventListener("click", async () => {
+        var cardIdInput = document.querySelector("#login-con input#card-id-input");
+        var cardId = cardIdInput.value;
+
+        var passwordInput = document.querySelector("#login-con input#password-input");
+        var passwordValue = passwordInput.value;
+
+        var response = await fetch(`http://${host}/card`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cardNumber: cardId,
+                password: passwordValue
+            })
+        });
+        var data = await response.json();
+        if (response.status === 200) {
+            console.log("Karte existiert bereits, Daten wurden aktualisiert");
+            cardnumber = cardId;
+            password = passwordValue;
+            document.querySelector("#login-con").style.display = "none";
+            document.querySelector("#action-con").style.display = "";
+            document.querySelector("#user-con").style.display = "";
+            transactionDiplayFlow();
+        } else if (response.status === 201) {
+            console.log("Karte erfolgreich hinzugefügt");
+            cardnumber = cardId;
+            password = passwordValue;
+            document.querySelector("#login-con").style.display = "none";
+            document.querySelector("#action-con").style.display = "";
+            document.querySelector("#user-con").style.display = "";
+            transactionDiplayFlow();
+        } else if (response.status === 400 && data.error === "cardNumber and password are required") {
+            console.log("Ungültige Eingabe, bitte überprüfe deine Anmeldedaten");
+        } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {   
+            console.log("Ungültige Kartendaten und konnte nicht mit den Kartenservice validiert werden, bitte überprüfe deine Anmeldedaten");
+        } else {
+            console.log("Unbekannter Fehler, bitte versuche es später erneut");
+        }
     });
 })();
