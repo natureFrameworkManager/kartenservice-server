@@ -21,3 +21,21 @@
 - **`add-location-btn` has no input validation and no error feedback** (`js.js`): Submitting with an empty name is not prevented client-side; non-201 responses (e.g. 400) are silently ignored with no message shown to the user
 - **XSS via unescaped server data injected as HTML** (`js.js`): `getLocationMealHTML`, `displayLocationTable`, `getTransactionHTML`, and `getTransactionPositionHTML` interpolate server-provided strings (names, categories, etc.) directly into template-literal HTML without escaping, allowing stored XSS if any value contains HTML
 - **`groupTransactionsByDay` groups by UTC date, causing wrong day buckets in non-UTC timezones** (`js.js`): `transaction.datum.toISOString().split("T")[0]` uses UTC midnight as the day boundary; transactions near midnight are bucketed under the wrong calendar day for users in timezones east of UTC
+
+### Backend Bugs & Missing Implementations
+
+#### Security
+- **`PATCH /meals/:id`, `POST /locations`, `PUT /locations/:id` have no authentication** (`server.js`): These endpoints modify server data but have no `preHandler: authenticate`, so any unauthenticated user can overwrite meal categories and add/edit canteen locations
+- **`POST /fetch/open-mensa` and `POST /fetch/mensa-xml` have no authentication** (`server.js`): Any anonymous caller can trigger remote fetches, causing unnecessary upstream API calls and potentially hitting rate limits
+- **Non-timing-safe password comparison in `authenticate`** (`server.js`): `card.password !== password` uses a simple string equality check, which is vulnerable to timing attacks; `crypto.timingSafeEqual` should be used instead
+- **`basicAuth` constructed at module load with potentially `undefined` values** (`api.js`): `Buffer.from(\`${process.env.BASIC_AUTH_USERNAME}:${process.env.BASIC_AUTH_PASSWORD}\`)` silently produces `"undefined:undefined"` if the env vars are missing; no startup validation
+
+#### Data / Logic
+- **UTC vs. local time mismatch breaks card meal lookup** (`db.js`): Meals are stored with UTC-midnight timestamps (`new Date("yyyy-MM-dd").getTime()`), but `getCardMeals` computes day boundaries using `setHours(0,0,0,0)` / `setHours(23,59,59,999)` (local time). In any timezone east of UTC, the UTC meal timestamp falls outside the local end-of-day boundary, so meals are never matched to transactions
+- **`insertTransList` stores dates in local time while meals use UTC** (`db.js`): Transaction dates are parsed with `new Date(year, month-1, day, hour, minute)` (local time), creating a systematic offset against UTC-stored meal dates that worsens the card meal lookup mismatch
+- **`mensa_locations` schema declares `openMensaId NOT NULL` but API and insert functions allow `null`** (`db.js` / `server.js`): The table schema has `openMensaId INTEGER NOT NULL UNIQUE`, but `insertMensaLocation` and `upsertLocationFromRemote` pass `null` when only a `mensaXMLId` is provided, causing a constraint violation at runtime
+- **`insertMensaXMLMeals` throws on unknown location, aborting the entire batch** (`db.js`): If a meal's `locationId` has no match in `mensa_locations`, `getMensaLocationByMensaXMLId` throws, stopping all subsequent insertions in that loop; the error should be logged and the entry skipped
+- **`getOpenMensaCanteenDays` and `getOpenMensaMeals` double-fetch page 1** (`api.js`): Both functions make an initial request to read the `X-Total-Pages` header and then loop from `page=1`, re-issuing the first request a second time and discarding the initial response body
+
+#### Missing / Incomplete
+- **`getAuthToken` and `getAuthTokenWithDays` are exact duplicates** (`api.js`): Both functions make the same request with the same error handling; only the return value differs; the shared fetch logic is never reused
