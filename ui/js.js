@@ -11,6 +11,7 @@ let cardnumber;
 let password;
 
 let locations = [];
+let allTransactions = {};
 
 const currencyFormatter = new Intl.NumberFormat("de-DE", {
     style: "currency",
@@ -98,6 +99,21 @@ async function getCardMeals(cardnumber, password, date = null) {
         meal.date = new Date(meal.date);
         return meal;
     });
+}
+
+/**
+ * @param {number} mealId
+ * @param {string} internalCategory
+ */
+async function updateMealInternalCategory(mealId, internalCategory) {
+    var response = await fetch(`http://${host}/meals/${mealId}`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ internalCategory })
+    });
+    return response;
 }
 
 /**
@@ -312,14 +328,15 @@ function displayMeals(mealsByLocation) {
 function getLocationMealHTML(meals) {
     return meals.map(meal => {
         return `
-            <div class="meal-con">
+            <div class="meal-con" data-meal-id="${meal.id}">
                 <span class="meal-name">${meal.name}</span>
                 <div class="meal-components-con">
                     ${meal.components.map(component => `<span>${component}</span>`).join("")}
                 </div>
                 <div class="meal-input">
                     <label for="">Int. Kateg.</label>
-                    <input type="text" placeholder="-" value="${meal.internalCategory ? meal.internalCategory : ""}">
+                    <input type="text" placeholder="-" value="${meal.internalCategory ? meal.internalCategory : ""}" data-original-value="${meal.internalCategory ? meal.internalCategory : ""}">
+                    <button class="save-internal-category-btn" style="display: none;">Speichern</button>
                 </div>
                 <div class="meal-bottom">
                     <span class="meal-category">${meal.category}</span>
@@ -456,17 +473,19 @@ function getTransactionHTML(transaction) {
                 </div>
             `;
         } else if (transaction.positions[0].meal === null && transaction.positions[0].name.includes("Essen")) {
-            var optionHtml = transaction.positions[0].meals.map(meal => {
+            var filteredMeals = transaction.positions[0].meals.filter(meal => Math.abs(meal.prices.students - transaction.positions[0].epreis) < 0.005);
+            var optionHtml = filteredMeals.map(meal => {
                 return `
-                    <option value="${meal.id}">${meal.name} (${meal.category})</option>
+                    <option value="${meal.id}">${meal.name} (${meal.internalCategory || '-'} | ${currencyFormatter.format(meal.prices.students)} | ${meal.category})</option>
                 `;
             }).join("");
             var html = `
                 <div class="missing-transaction-position-meal-reference">
-                    <select name="" class="meal-reference-select">
+                    <select class="meal-reference-select" data-position-name="${transaction.positions[0].name}">
                         <option disabled selected>Essen zuordnen</option>
                         ${optionHtml}
                     </select>
+                    <button class="save-meal-select-btn">Speichern</button>
                 </div>
             `;
         } else {
@@ -509,7 +528,6 @@ function getTransactionHTML(transaction) {
  * @returns 
  */
 function getTransactionPositionHTML(position) {
-    console.log(position, position.meal !== null, position.name.includes("Essen"), position.meals != undefined, Array.isArray(position.meals));
     if (position.meal !== null) {
         return `
             <div class="transaction-position">
@@ -525,10 +543,10 @@ function getTransactionPositionHTML(position) {
                 <span>${currencyFormatter.format(position.gpreis)}</span>
             </div>`;
     } else if (position.name.includes("Essen") && position.meals !== undefined) {
-        console.log(position.meals);
-        var html = position.meals.map(meal => {
+        var filteredMeals = position.meals.filter(meal => Math.abs(meal.prices.students - position.epreis) < 0.005);
+        var html = filteredMeals.map(meal => {
             return `
-                <option value="${meal.id}">${meal.name} (${meal.category})</option>
+                <option value="${meal.id}">${meal.name} (${meal.internalCategory || '-'} | ${currencyFormatter.format(meal.prices.students)} | ${meal.category})</option>
             `;
         }).join("");
         return `
@@ -538,10 +556,11 @@ function getTransactionPositionHTML(position) {
                     <span>${position.menge}x ${currencyFormatter.format(position.epreis)}</span>
                 </div>
                 <div class="missing-transaction-position-meal-reference">
-                    <select name="" class="meal-reference-select">
+                    <select class="meal-reference-select" data-position-name="${position.name}">
                         <option disabled selected>Essen zuordnen</option>
                         ${html}
                     </select>
+                    <button class="save-meal-select-btn">Speichern</button>
                 </div>
                 <span>${currencyFormatter.format(position.gpreis)}</span>
             </div>
@@ -582,8 +601,8 @@ function transactionDiplayFlow() {
             let combinedTransactionsWithMeals = await addMealsToCombinedTransactions(combinedTransactions, cardMeals);
             console.log(combinedTransactionsWithMeals);
             console.log(combinedTransactionsWithMeals.filter(t => t.positions.some(p => p.meals === undefined)))
-            displayTransactions(groupTransactionsByDay(combinedTransactionsWithMeals));
-            console.log(groupTransactionsByDay(combinedTransactionsWithMeals));
+            allTransactions = groupTransactionsByDay(combinedTransactionsWithMeals);
+            displayTransactions(allTransactions);
         })();
     } else {
         displayUnauthenticatedTransactions();
@@ -807,5 +826,78 @@ changeView("meals-view");
             console.log("Fehler beim Löschen der Karte, bitte versuche es später erneut");
         }
         document.querySelector("dialog").hidePopover();
+    });
+
+    document.querySelector("#meals-view div#location-list").addEventListener("input", (event) => {
+        if (event.target.matches(".meal-input input[type='text']")) {
+            const input = event.target;
+            const btn = input.closest(".meal-input").querySelector(".save-internal-category-btn");
+            btn.style.display = input.value !== input.dataset.originalValue ? "" : "none";
+        }
+    });
+    document.querySelector("#meals-view div#location-list").addEventListener("click", async (event) => {
+        if (event.target.matches(".save-internal-category-btn")) {
+            const btn = event.target;
+            const input = btn.closest(".meal-input").querySelector("input");
+            const mealId = btn.closest("[data-meal-id]").dataset.mealId;
+            await updateMealInternalCategory(Number(mealId), input.value);
+            input.dataset.originalValue = input.value;
+            btn.style.display = "none";
+        }
+    });
+
+    document.querySelector("#location-view #add-location-btn").addEventListener("click", async () => {
+        var name = document.querySelector("#location-view #location-name-input").value.trim();
+        var internalName = document.querySelector("#location-view #location-internal-name-input").value.trim() || null;
+        var openMensaIdStr = document.querySelector("#location-view #location-openmensa-id-input").value.trim();
+        var mensaXMLIdStr = document.querySelector("#location-view #location-studenwerk-id-input").value.trim();
+        var openMensaId = openMensaIdStr ? Number(openMensaIdStr) : null;
+        var mensaXMLId = mensaXMLIdStr ? Number(mensaXMLIdStr) : null;
+        var response = await fetch(`http://${host}/locations`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ name, internalName, openMensaId, mensaXMLId })
+        });
+        if (response.status === 201) {
+            locations = await getLocations();
+            displayLocationTable(locations);
+            displayLocationSelector(locations);
+            document.querySelector("#location-view #location-name-input").value = "";
+            document.querySelector("#location-view #location-internal-name-input").value = "";
+            document.querySelector("#location-view #location-openmensa-id-input").value = "";
+            document.querySelector("#location-view #location-studenwerk-id-input").value = "";
+        }
+    });
+
+    document.querySelector("#transaction-query button").addEventListener("click", () => {
+        document.querySelector("#transaction-date-input").value = "";
+        displayTransactions(allTransactions);
+    });
+    document.querySelector("#transaction-date-input").addEventListener("change", (event) => {
+        var dateValue = event.target.value;
+        if (dateValue === "") {
+            displayTransactions(allTransactions);
+        } else {
+            var filtered = {};
+            if (allTransactions[dateValue]) {
+                filtered[dateValue] = allTransactions[dateValue];
+            }
+            displayTransactions(filtered);
+        }
+    });
+
+    document.querySelector("#transaction-view div#transaction-list").addEventListener("click", async (event) => {
+        if (event.target.matches(".save-meal-select-btn")) {
+            const btn = event.target;
+            const select = btn.closest(".missing-transaction-position-meal-reference").querySelector(".meal-reference-select");
+            const mealId = select.value;
+            const positionName = select.dataset.positionName;
+            if (!mealId || mealId === "") return;
+            await updateMealInternalCategory(Number(mealId), positionName);
+            btn.textContent = "Gespeichert";
+            btn.disabled = true;
+        }
     });
 })();
