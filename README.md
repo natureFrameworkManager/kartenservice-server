@@ -2,7 +2,6 @@
 
 ## ToDO:
 - Remove transaction history after card deletion
-- Add host sync for meals & locations and single card transactions for server-to-server sync
 - Add SSE for sync updates
 - Add UI for managing cards and meals
   - Wire up sync buttons

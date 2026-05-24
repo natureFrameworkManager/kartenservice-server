@@ -801,3 +801,78 @@ export function updateMensaLocation(id, name, internalName, openMensaId, mensaXM
     const result = stmt.run(name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null, id);
     return result.changes > 0;
 }
+
+/**
+ * Inserts a mensa location from a remote server sync, ignoring conflicts on openMensaId or mensaXMLId.
+ * @param {string} name
+ * @param {string|null} internalName
+ * @param {number|null} openMensaId
+ * @param {number|null} mensaXMLId
+ * @returns {void}
+ */
+export function upsertLocationFromRemote(name, internalName, openMensaId, mensaXMLId) {
+    const stmt = db.prepare('INSERT OR IGNORE INTO mensa_locations (name, internalName, openMensaId, mensaXMLId) VALUES (?, ?, ?, ?)');
+    stmt.run(name, internalName ?? null, openMensaId ?? null, mensaXMLId ?? null);
+}
+
+/**
+ * Inserts meals synced from a remote server, ignoring duplicates. Matches locations by openMensaId or mensaXMLId.
+ * @param {{locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: string, name: string, category: string, internalCategory: string|null, prices: object|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]} meals
+ * @returns {void}
+ */
+export function insertMealsFromRemote(meals) {
+    const stmt = db.prepare(`
+        INSERT OR IGNORE INTO meals (mensa_location_id, date, name, category, internalCategory, prices, notes, components, tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const meal of meals) {
+        let location = null;
+        if (meal.locationOpenMensaId != null) {
+            location = getMensaLocationByOpenMensaId(meal.locationOpenMensaId);
+        }
+        if (!location && meal.locationMensaXMLId != null) {
+            location = getMensaLocationByMensaXMLId(meal.locationMensaXMLId);
+        }
+        if (!location) continue;
+        const dateObj = new Date(meal.date);
+        stmt.run(
+            location.id,
+            dateObj.getTime(),
+            meal.name,
+            meal.category,
+            meal.internalCategory ?? null,
+            meal.prices ? JSON.stringify(meal.prices) : null,
+            meal.notes ? JSON.stringify(meal.notes) : null,
+            meal.components ? JSON.stringify(meal.components) : null,
+            meal.tags ? JSON.stringify(meal.tags) : null
+        );
+    }
+}
+
+/**
+ * Inserts transactions synced from a remote server. Accepts datum as an ISO date string or timestamp.
+ * @param {{mandantId: number, transFullId: string, datum: string, ortName: string, kaName: string, typName: string, zahlBetrag: number, dateiablageId: number|null, bonusInfo: string|null}[]} transList
+ * @param {string} cardnumber
+ * @returns {void}
+ */
+export function insertTransListFromRemote(transList, cardnumber) {
+    const stmt = db.prepare(`
+        INSERT OR IGNORE INTO trans (mandantId, transFullId, datum, ortName, kaName, typName, zahlBetrag, dateiablageId, bonusInfo, cardnumber)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const trans of transList) {
+        const date = new Date(trans.datum);
+        stmt.run(
+            trans.mandantId,
+            trans.transFullId,
+            date.getTime(),
+            trans.ortName,
+            trans.kaName,
+            trans.typName,
+            trans.zahlBetrag,
+            trans.dateiablageId ?? null,
+            trans.bonusInfo ?? null,
+            cardnumber
+        );
+    }
+}

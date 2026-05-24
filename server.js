@@ -7,7 +7,7 @@ dotenv.config({ quiet: true });
 
 import { getAuthToken } from './api.js';
 import { updateMealLookup, fetchOpenMensaMeals, fetchMensaXMLMeals, fetchTransAndTranspos } from './logic.js';
-import { getCard, insertCard, updateCard, deleteCard, setupInfisicalClient, getTransList, getTransPosList, getMeals, getCardMeals, getMensaLocations, insertMensaLocation, updateMensaLocation, updateInternalCategory } from './db.js';
+import { getCard, insertCard, updateCard, deleteCard, setupInfisicalClient, getTransList, getTransPosList, getMeals, getCardMeals, getMensaLocations, insertMensaLocation, updateMensaLocation, updateInternalCategory, upsertLocationFromRemote, insertMealsFromRemote, insertTransListFromRemote, insertTransPosList } from './db.js';
 
 /**
  * @typedef {{ date: string }} ParamsDate
@@ -304,6 +304,88 @@ fastify.patch('/meals/:id', async (request, reply) => {
     }
     updateInternalCategory(Number(id), internalCategory);
     reply.code(200).send({ message: 'Meal updated' });
+});
+
+/** Fetches meals and locations from a remote server running the same API and stores them locally. */
+fastify.post('/sync/host/meals', async (request, reply) => {
+    const { hostUrl } = /** @type {any} */ (request.body) ?? {};
+    if (!hostUrl) {
+        reply.code(400).send({ error: 'hostUrl is required' });
+        return;
+    }
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(hostUrl);
+    } catch {
+        reply.code(400).send({ error: 'Invalid hostUrl' });
+        return;
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        reply.code(400).send({ error: 'hostUrl must use http or https' });
+        return;
+    }
+    const baseUrl = parsedUrl.origin;
+    (async () => {
+        const [locationsRes, mealsRes] = await Promise.all([
+            fetch(`${baseUrl}/locations`),
+            fetch(`${baseUrl}/meals`)
+        ]);
+        if (!locationsRes.ok) throw new Error(`Failed to fetch locations from remote: ${locationsRes.status}`);
+        if (!mealsRes.ok) throw new Error(`Failed to fetch meals from remote: ${mealsRes.status}`);
+        const remoteLocations = await locationsRes.json();
+        const remoteMeals = await mealsRes.json();
+        for (const loc of remoteLocations) {
+            upsertLocationFromRemote(loc.name, loc.internalName ?? null, loc.openMensaId ?? null, loc.mensaXMLId ?? null);
+        }
+        insertMealsFromRemote(remoteMeals);
+        updateMealLookup();
+    })().catch(err => fastify.log.error('Error in host meals sync:', err));
+    reply.code(202).send({ message: 'Host meals sync triggered' });
+});
+
+/** Fetches transactions for the authenticated card from a remote server and stores them locally. */
+fastify.post('/sync/host/transactions', { preHandler: authenticate }, async (request, reply) => {
+    const { hostUrl, cardNumber } = /** @type {any} */ (request.body) ?? {};
+    if (!hostUrl || !cardNumber) {
+        reply.code(400).send({ error: 'hostUrl and cardNumber are required' });
+        return;
+    }
+    if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
+        reply.code(403).send({ error: 'Forbidden' });
+        return;
+    }
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(hostUrl);
+    } catch {
+        reply.code(400).send({ error: 'Invalid hostUrl' });
+        return;
+    }
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        reply.code(400).send({ error: 'hostUrl must use http or https' });
+        return;
+    }
+    const card = await getCard(cardNumber);
+    if (!card) {
+        reply.code(404).send({ error: 'Card not found' });
+        return;
+    }
+    const baseUrl = parsedUrl.origin;
+    const authHeader = `Basic ${Buffer.from(`${card.cardnumber}:${card.password}`).toString('base64')}`;
+    (async () => {
+        const [transRes, transposRes] = await Promise.all([
+            fetch(`${baseUrl}/trans/${cardNumber}`, { headers: { 'Authorization': authHeader } }),
+            fetch(`${baseUrl}/transpos/${cardNumber}`, { headers: { 'Authorization': authHeader } })
+        ]);
+        if (!transRes.ok) throw new Error(`Failed to fetch transactions from remote: ${transRes.status}`);
+        if (!transposRes.ok) throw new Error(`Failed to fetch transaction positions from remote: ${transposRes.status}`);
+        const remoteTrans = await transRes.json();
+        const remoteTranspos = await transposRes.json();
+        insertTransListFromRemote(remoteTrans, cardNumber);
+        insertTransPosList(remoteTranspos, cardNumber);
+        updateMealLookup();
+    })().catch(err => fastify.log.error('Error in host transactions sync:', err));
+    reply.code(202).send({ message: 'Host transactions sync triggered' });
 });
 
 try {

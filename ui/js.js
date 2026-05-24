@@ -900,4 +900,61 @@ changeView("meals-view");
             btn.disabled = true;
         }
     });
+
+    document.querySelector("#sync-meals-btn").addEventListener("click", async () => {
+        const hostUrl = document.querySelector("#sync-meals-host-input").value.trim();
+        if (!hostUrl) return;
+        const btn = document.querySelector("#sync-meals-btn");
+        btn.disabled = true;
+        btn.textContent = "Wird geladen...";
+        try {
+            var response = await fetch(`http://${host}/sync/host/meals`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hostUrl })
+            });
+            if (response.status === 202) {
+                btn.textContent = "Gestartet";
+            } else {
+                var data = await response.json();
+                btn.textContent = `Fehler: ${data.error}`;
+                btn.disabled = false;
+            }
+        } catch {
+            btn.textContent = "Fehler";
+            btn.disabled = false;
+        }
+    });
+
+    document.querySelector("#sync-transactions-btn").addEventListener("click", async () => {
+        if (!cardnumber || !password) {
+            alert("Bitte zuerst anmelden.");
+            return;
+        }
+        const hostUrl = document.querySelector("#sync-transactions-host-input").value.trim();
+        if (!hostUrl) return;
+        const btn = document.querySelector("#sync-transactions-btn");
+        btn.disabled = true;
+        btn.textContent = "Wird geladen...";
+        try {
+            var response = await fetch(`http://${host}/sync/host/transactions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
+                },
+                body: JSON.stringify({ hostUrl, cardNumber: cardnumber })
+            });
+            if (response.status === 202) {
+                btn.textContent = "Gestartet";
+            } else {
+                var data = await response.json();
+                btn.textContent = `Fehler: ${data.error}`;
+                btn.disabled = false;
+            }
+        } catch {
+            btn.textContent = "Fehler";
+            btn.disabled = false;
+        }
+    });
 })();
