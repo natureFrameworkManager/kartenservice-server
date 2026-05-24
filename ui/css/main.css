@@ -98,13 +98,19 @@ aside span#app-title {
     @apply h-14 ml-3 flex items-center font-bold px-3;
 }
 aside div#host-con {
-    @apply h-16 flex items-center w-full gap-1 border-b border-border pb-3 px-3;
+    @apply h-16 flex items-center w-full gap-1 pb-3 px-3;
 }
 aside div#host-con input {
     @apply px-2 rounded border border-border bg-transparent text-sm w-full;
 }
 aside div#host-con span {
     @apply cursor-pointer text-[20px];
+}
+aside div#host-error-con {
+    @apply border-b border-border mb-3;
+}
+aside div#host-error-con span {
+    @apply text-sm bg-red-600 dark:bg-red-500 text-white px-3 py-2 block rounded mx-2;
 }
 
 aside nav {

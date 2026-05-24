@@ -5,7 +5,7 @@ document.documentElement.classList.toggle(
         (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
 ,);
 
-let host = "localhost:3001";
+let host = "localhost:3002";
 
 let cardnumber;
 let password;
@@ -589,6 +589,39 @@ function transactionDiplayFlow() {
         displayUnauthenticatedTransactions();
     }
 }
+async function mealsLocationsFlow() {
+    locations = await getLocations();
+    displayLocationSelector(locations);
+    displayLocationTable(locations);
+    console.log(locations);
+
+    let meals = await getMeals(null,new Date("2026-05-13"));
+    meals = groupMealsByLocation(meals);
+    displayMeals(meals);
+    console.log(meals);
+}
+function displayUnreachableHost() {
+    const locationContainer = document.querySelector("#meals-view div#location-list");
+    locationContainer.innerHTML = `
+        <div class="unreachable-host-con">
+            <span>Der Server ist nicht erreichbar. Bitte überprüfe die Host-URL und ob der Server läuft.</span>
+        </div>
+    `;
+    const locationTableBody = document.querySelector("#location-view div#location-list tbody");
+    locationTableBody.innerHTML = `
+        <tr>
+            <td colspan="5" class="unreachable-host-con">
+                <span>Der Server ist nicht erreichbar. Bitte überprüfe die Host-URL und ob der Server läuft.</span>
+            </td>
+        </tr>
+    `;
+     const transactionContainer = document.querySelector("#transaction-view div#transaction-list");
+     transactionContainer.innerHTML = `
+        <div class="unreachable-host-con">
+            <span>Der Server ist nicht erreichbar. Bitte überprüfe die Host-URL und ob der Server läuft.</span>
+        </div>
+    `;
+}
 
 function changeView(viewId) {
     document.querySelectorAll("body > div").forEach(div => {
@@ -617,19 +650,13 @@ changeView("meals-view");
 
 document.querySelector("dialog").style.display = "none";
 
-(async () => {
-    console.log(await getLocations());
-
-    locations = await getLocations();
-    displayLocationSelector(locations);
-    displayLocationTable(locations);
-
-    let meals = await getMeals(null,new Date("2026-05-13"));
-    meals = groupMealsByLocation(meals);
-    displayMeals(meals);
-    console.log(meals);
-
-    transactionDiplayFlow();
+(async () => {    
+    try {
+        await mealsLocationsFlow();
+        await transactionDiplayFlow();
+    } catch (error) {
+        displayUnreachableHost();
+    }
 
     document.querySelector("#meals-view select#location-input").addEventListener("change", async (event) => {
         var dateValue = document.querySelector("#meals-view input#date-input").value;
@@ -648,6 +675,34 @@ document.querySelector("dialog").style.display = "none";
         meals = groupMealsByLocation(meals);
         displayMeals(meals);
         console.log(meals);
+    });
+    document.querySelector("#host-input").addEventListener("change", async (event) => {
+        console.log("Host geändert zu:", event.target.value);
+        try {
+            host = event.target.value;
+            await mealsLocationsFlow();
+            await transactionDiplayFlow();
+        } catch (error) {
+            displayUnreachableHost();
+            if (event.target.value === window.location.host) {
+                document.querySelector("#host-error-con").innerHTML = "<span>Fehler beim Verbinden mit dem Server.<br>Bitte stelle sicher, dass der Server läuft und die Host-URL korrekt ist.</span>";
+            } else {
+                document.querySelector("#host-error-con").innerHTML = "<span>Fehler beim Verbinden mit dem Server.<br>Bitte überprüfe die Host-URL und ob der Server CORS-Anfragen erlaubt.</span>";
+            }
+            setTimeout(() => {
+                document.querySelector("#host-error-con").innerHTML = "";
+            }, 5000);
+        }
+    });
+    document.querySelector("#host-con span").addEventListener("click", async () => {
+        document.querySelector("#host-input").value = window.location.host;
+        host = window.location.host;
+        try {
+            await mealsLocationsFlow();
+            await transactionDiplayFlow();
+        } catch (error) {
+            displayUnreachableHost();
+        }
     });
 
     document.querySelector("#login-con button").addEventListener("click", async () => {
@@ -675,7 +730,11 @@ document.querySelector("dialog").style.display = "none";
             document.querySelector("#login-con").style.display = "none";
             document.querySelector("#action-con").style.display = "";
             document.querySelector("#user-con").style.display = "";
-            transactionDiplayFlow();
+            try {
+                await transactionDiplayFlow();
+            } catch (error) {
+                displayUnreachableHost();
+            }
         } else if (response.status === 201) {
             console.log("Karte erfolgreich hinzugefügt");
             cardnumber = cardId;
@@ -683,7 +742,11 @@ document.querySelector("dialog").style.display = "none";
             document.querySelector("#login-con").style.display = "none";
             document.querySelector("#action-con").style.display = "";
             document.querySelector("#user-con").style.display = "";
-            transactionDiplayFlow();
+            try {
+                await transactionDiplayFlow();
+            } catch (error) {
+                displayUnreachableHost();
+            }
         } else if (response.status === 400 && data.error === "cardNumber and password are required") {
             console.log("Ungültige Eingabe, bitte überprüfe deine Anmeldedaten");
         } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {   
