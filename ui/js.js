@@ -8,7 +8,7 @@ document.documentElement.classList.toggle(
 let host = "localhost:3001";
 
 let cardnumber = "36159433725730052";
-let password = "";
+let password = "6Vf6.ovbMk";
 
 let locations = [];
 
@@ -438,6 +438,7 @@ function getTransactionHTML(transaction) {
                             <span>${transaction.kaName}</span>
                         </div>
                     </div>
+                    <div></div>
                     <span>${currencyFormatter.format(transactionTotal)}</span>
                 </div>
                 <div class="transaction-position-con">
@@ -446,6 +447,34 @@ function getTransactionHTML(transaction) {
             </div>
             `;
     } else if (transaction.positions.length === 1) {
+        if (transaction.positions[0].meal !== null) {
+            var html = `
+                <div class="transaction-position-meal-reference">
+                    <span>[${transaction.positions[0].meal.id}]</span>
+                    <span>${transaction.positions[0].meal.name}</span>
+                    <span>${transaction.positions[0].meal.category}</span>
+                </div>
+            `;
+        } else if (transaction.positions[0].meal === null && transaction.positions[0].name.includes("Essen")) {
+            var optionHtml = transaction.positions[0].meals.map(meal => {
+                return `
+                    <option value="${meal.id}">${meal.name} (${meal.category})</option>
+                `;
+            }).join("");
+            var html = `
+                <div class="missing-transaction-position-meal-reference">
+                    <select name="" class="meal-reference-select">
+                        <option disabled selected>Essen zuordnen</option>
+                        ${optionHtml}
+                    </select>
+                </div>
+            `;
+        } else {
+            var html = `
+                <div class="missing-transaction-position-meal-reference">
+                </div>
+            `;
+        }
         return `
             <div class="transaction-con">
                 <div class="transaction-con-header">
@@ -464,6 +493,7 @@ function getTransactionHTML(transaction) {
                             <span>${transaction.kaName}</span>
                         </div>
                     </div>
+                    ${html}
                     <span>${currencyFormatter.format(transaction.positions[0].gpreis)}</span>
                 </div>
             </div>

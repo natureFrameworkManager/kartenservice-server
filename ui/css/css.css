@@ -755,10 +755,10 @@ div h2 {
   border-color: var(--color-border);
 }
 #transaction-view div.transaction-con div.transaction-con-header {
-  display: flex;
+  display: grid;
   width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: flex-start;
-  justify-content: space-between;
   gap: calc(var(--spacing) * 2);
 }
 #transaction-view div.transaction-con div.transaction-con-header > div.info-con {
@@ -784,6 +784,7 @@ div h2 {
   color: var(--color-gray-500);
 }
 #transaction-view div.transaction-con div.transaction-con-header > span {
+  text-align: right;
   --tw-font-weight: var(--font-weight-bold);
   font-weight: var(--font-weight-bold);
   color: var(--color-primary);
@@ -813,17 +814,23 @@ div h2 {
   line-height: var(--tw-leading, var(--text-xs--line-height));
   color: var(--color-gray-500);
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference, #transaction-view div.transaction-con-header > div.transaction-position-meal-reference {
   display: flex;
   align-items: baseline;
   column-gap: calc(var(--spacing) * 2);
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:first-child {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:first-child, #transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:first-child {
   font-size: var(--text-xs);
   line-height: var(--tw-leading, var(--text-xs--line-height));
   color: var(--color-gray-500);
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:last-child {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:nth-child(2), #transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:nth-child(2) {
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  --tw-font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-normal);
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:last-child, #transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:last-child {
   width: fit-content;
   border-radius: var(--radius);
   background-color: var(--color-primary);
@@ -833,13 +840,13 @@ div h2 {
   line-height: var(--tw-leading, var(--text-sm--line-height));
   color: var(--color-text-primary);
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference, #transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference {
   display: flex;
   width: 100%;
   align-items: center;
   column-gap: calc(var(--spacing) * 2);
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference select {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference select, #transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference select {
   width: 100%;
   border-radius: var(--radius);
   border-color: var(--color-border);
@@ -850,7 +857,7 @@ div h2 {
   font-size: var(--text-sm);
   line-height: var(--tw-leading, var(--text-sm--line-height));
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference button {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference button, #transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference button {
   padding-inline: calc(var(--spacing) * 2);
   padding-block: calc(var(--spacing) * 1);
   text-wrap: nowrap;

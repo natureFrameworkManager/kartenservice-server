@@ -283,7 +283,7 @@ div h2 {
     @apply border-b border-border;
 }
 #transaction-view div.transaction-con div.transaction-con-header {
-    @apply flex justify-between items-start gap-2 w-full; 
+    @apply grid grid-cols-3 items-start gap-2 w-full; 
 }
 #transaction-view div.transaction-con div.transaction-con-header > div.info-con {
     @apply flex flex-col
@@ -299,7 +299,7 @@ div h2 {
     @apply flex gap-x-2 text-sm text-gray-500;
 }
 #transaction-view div.transaction-con div.transaction-con-header > span {
-    @apply text-primary font-bold; 
+    @apply text-primary font-bold text-right; 
 }
 #transaction-view div.transaction-con div.transaction-position-con {
     @apply ml-4 mt-2 border-s-2 border-border pl-4 flex flex-col gap-y-3;
@@ -313,22 +313,32 @@ div h2 {
 #transaction-view div.transaction-position-con div.transaction-position > div:not(.transaction-position-meal-reference):not(.missing-transaction-position-meal-reference) span:last-child {
     @apply text-gray-500 text-xs;
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference,
+#transaction-view div.transaction-con-header > div.transaction-position-meal-reference {
     @apply flex gap-x-2 items-baseline;
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:first-child {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:first-child,
+#transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:first-child {
     @apply text-xs text-gray-500;
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:last-child {
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:nth-child(2),
+#transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:nth-child(2) {
+    @apply text-sm font-normal;
+}
+#transaction-view div.transaction-position-con div.transaction-position > div.transaction-position-meal-reference span:last-child,
+#transaction-view div.transaction-con-header > div.transaction-position-meal-reference span:last-child {
     @apply text-sm bg-primary text-text-primary rounded px-2 py-0.5 w-fit
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference,
+#transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference {
     @apply flex gap-x-2 items-center w-full;
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference select {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference select,
+#transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference select {
     @apply bg-surface border-border rounded px-3 py-1.5 text-sm pr-8 w-full; 
 }
-#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference button {
+#transaction-view div.transaction-position-con div.transaction-position > div.missing-transaction-position-meal-reference button,
+#transaction-view div.transaction-con-header > div.missing-transaction-position-meal-reference button {
     @apply text-nowrap px-2 py-1;
 }
 #transaction-view div.transaction-position-con div.transaction-position > span {
