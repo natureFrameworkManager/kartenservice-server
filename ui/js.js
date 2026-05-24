@@ -623,6 +623,57 @@ function displayUnreachableHost() {
     `;
 }
 
+async function loginFlow() {
+    var cardIdInput = document.querySelector("#login-con input#card-id-input");
+    var cardId = cardIdInput.value;
+
+    var passwordInput = document.querySelector("#login-con input#password-input");
+    var passwordValue = passwordInput.value;
+
+    var response = await fetch(`http://${host}/card`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            cardNumber: cardId,
+            password: passwordValue
+        })
+    });
+    var data = await response.json();
+    if (response.status === 200) {
+        console.log("Karte existiert bereits, Daten wurden aktualisiert");
+        cardnumber = cardId;
+        password = passwordValue;
+        document.querySelector("#login-con").style.display = "none";
+        document.querySelector("#action-con").style.display = "";
+        document.querySelector("#user-con").style.display = "";
+        try {
+            await transactionDiplayFlow();
+        } catch (error) {
+            displayUnreachableHost();
+        }
+    } else if (response.status === 201) {
+        console.log("Karte erfolgreich hinzugefügt");
+        cardnumber = cardId;
+        password = passwordValue;
+        document.querySelector("#login-con").style.display = "none";
+        document.querySelector("#action-con").style.display = "";
+        document.querySelector("#user-con").style.display = "";
+        try {
+            await transactionDiplayFlow();
+        } catch (error) {
+            displayUnreachableHost();
+        }
+    } else if (response.status === 400 && data.error === "cardNumber and password are required") {
+        console.log("Ungültige Eingabe, bitte überprüfe deine Anmeldedaten");
+    } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {   
+        console.log("Ungültige Kartendaten und konnte nicht mit den Kartenservice validiert werden, bitte überprüfe deine Anmeldedaten");
+    } else {
+        console.log("Unbekannter Fehler, bitte versuche es später erneut");
+    }
+}
+
 function changeView(viewId) {
     document.querySelectorAll("body > div").forEach(div => {
         if (div.id === viewId) {
@@ -706,53 +757,18 @@ document.querySelector("dialog").style.display = "none";
     });
 
     document.querySelector("#login-con button").addEventListener("click", async () => {
-        var cardIdInput = document.querySelector("#login-con input#card-id-input");
-        var cardId = cardIdInput.value;
-
-        var passwordInput = document.querySelector("#login-con input#password-input");
-        var passwordValue = passwordInput.value;
-
-        var response = await fetch(`http://${host}/card`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                cardNumber: cardId,
-                password: passwordValue
-            })
-        });
-        var data = await response.json();
-        if (response.status === 200) {
-            console.log("Karte existiert bereits, Daten wurden aktualisiert");
-            cardnumber = cardId;
-            password = passwordValue;
-            document.querySelector("#login-con").style.display = "none";
-            document.querySelector("#action-con").style.display = "";
-            document.querySelector("#user-con").style.display = "";
-            try {
-                await transactionDiplayFlow();
-            } catch (error) {
-                displayUnreachableHost();
-            }
-        } else if (response.status === 201) {
-            console.log("Karte erfolgreich hinzugefügt");
-            cardnumber = cardId;
-            password = passwordValue;
-            document.querySelector("#login-con").style.display = "none";
-            document.querySelector("#action-con").style.display = "";
-            document.querySelector("#user-con").style.display = "";
-            try {
-                await transactionDiplayFlow();
-            } catch (error) {
-                displayUnreachableHost();
-            }
-        } else if (response.status === 400 && data.error === "cardNumber and password are required") {
-            console.log("Ungültige Eingabe, bitte überprüfe deine Anmeldedaten");
-        } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {   
-            console.log("Ungültige Kartendaten und konnte nicht mit den Kartenservice validiert werden, bitte überprüfe deine Anmeldedaten");
-        } else {
-            console.log("Unbekannter Fehler, bitte versuche es später erneut");
+        try {
+            await loginFlow();
+        } catch (error) {
+            displayUnreachableHost();
+        }
+    });
+    document.querySelector("form#login-con").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+            await loginFlow();
+        } catch (error) {
+            displayUnreachableHost();
         }
     });
 })();

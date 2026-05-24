@@ -421,12 +421,12 @@ aside div#nav-bottom {
   margin-top: auto;
   padding: calc(var(--spacing) * 3);
 }
-aside div#nav-bottom div#login-con p {
+aside div#nav-bottom form#login-con p {
   font-size: var(--text-xs);
   line-height: var(--tw-leading, var(--text-xs--line-height));
   color: var(--color-gray-500);
 }
-aside div#nav-bottom div#login-con p a {
+aside div#nav-bottom form#login-con p a {
   color: var(--color-blue-400);
   &:hover {
     @media (hover: hover) {
@@ -437,7 +437,7 @@ aside div#nav-bottom div#login-con p a {
     color: var(--color-sky-700);
   }
 }
-aside div#nav-bottom div#login-con {
+aside div#nav-bottom form#login-con {
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 3);

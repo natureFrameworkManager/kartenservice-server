@@ -126,13 +126,13 @@ aside nav span.active {
 aside div#nav-bottom {
     @apply bottom-0 relative mt-auto p-3;
 }
-aside div#nav-bottom div#login-con p {
+aside div#nav-bottom form#login-con p {
     @apply text-xs text-gray-500;
 }
-aside div#nav-bottom div#login-con p a {
+aside div#nav-bottom form#login-con p a {
     @apply text-blue-400 dark:text-sky-700 hover:underline;
 }
-aside div#nav-bottom div#login-con {
+aside div#nav-bottom form#login-con {
     @apply flex flex-col gap-3;
 }
 
