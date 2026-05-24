@@ -44,7 +44,7 @@
 
                         Dabei werden keine historischen Transaktionsdaten gelöscht.
                     </p>
-                    <button>Karte löschen</button class="delete">
+                    <button id="delete-card-button" popovertarget="delete-card-dialog">Karte löschen</button>
                 </div>
                 <div id="user-con" style="display: none;"><span>36159433725730052</span><button class="material-icons-round">logout</button></div>
             </div>
@@ -1783,12 +1783,14 @@
                 </div>
             </div>
         </div>
-        <dialog>
-            <h1>Willst du deine Karte und alle historischen Transaktionsdaten wirklich löschen?</h1>
-            <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
-            <div>
-                <button id="confirm-delete-card-btn">Karte löschen</button>
-                <button id="cancel-delete-card-btn">Abbrechen</button>
+        <dialog popover id="delete-card-dialog">
+            <div class="modal-surface">
+                <h1>Willst du deine Karte und alle historischen Transaktionsdaten wirklich löschen?</h1>
+                <p>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                <div class="modal-action-con">
+                    <button id="confirm-delete-card-btn">Karte löschen</button>
+                    <button id="cancel-delete-card-btn" popovertarget="delete-card-dialog" popovertargetaction="hide">Abbrechen</button>
+                </div>
             </div>
         </dialog>
         <script src="js.js"></script>

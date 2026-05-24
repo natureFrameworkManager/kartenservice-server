@@ -5,7 +5,7 @@ document.documentElement.classList.toggle(
         (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
 ,);
 
-let host = "localhost:3002";
+let host = "localhost:3001";
 
 let cardnumber;
 let password;
@@ -646,7 +646,7 @@ async function loginFlow() {
         cardnumber = cardId;
         password = passwordValue;
         document.querySelector("#login-con").style.display = "none";
-        document.querySelector("#action-con").style.display = "";
+        document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
         try {
             await transactionDiplayFlow();
@@ -658,7 +658,7 @@ async function loginFlow() {
         cardnumber = cardId;
         password = passwordValue;
         document.querySelector("#login-con").style.display = "none";
-        document.querySelector("#action-con").style.display = "";
+        document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
         try {
             await transactionDiplayFlow();
@@ -698,8 +698,6 @@ document.querySelectorAll("aside nav span").forEach(button => {
     });
 });
 changeView("meals-view");
-
-document.querySelector("dialog").style.display = "none";
 
 (async () => {    
     try {
@@ -770,5 +768,44 @@ document.querySelector("dialog").style.display = "none";
         } catch (error) {
             displayUnreachableHost();
         }
+    });
+    document.querySelector("#user-con span").addEventListener("click", () => {
+        if (document.querySelector("#action-con").style.display === "none") {
+            document.querySelector("#action-con").style.display = "";
+        } else {
+            document.querySelector("#action-con").style.display = "none";
+        }
+    });
+    document.querySelector("#user-con button").addEventListener("click", () => {
+        cardnumber = null;
+        password = null;
+        document.querySelector("#login-con").style.display = "";
+        document.querySelector("#action-con").style.display = "none";
+        document.querySelector("#user-con").style.display = "none";
+        displayUnauthenticatedTransactions();
+    });
+    document.querySelector("dialog button#confirm-delete-card-btn").addEventListener("click", async () => {
+        var response = await fetch(`http://${host}/card`, {
+            method: "DELETE",
+            body: JSON.stringify({
+                cardNumber: cardnumber
+            }),
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
+            }
+        });
+        if (response.status === 200) {
+            console.log("Karte erfolgreich gelöscht");
+            cardnumber = null;
+            password = null;
+            document.querySelector("#login-con").style.display = "";
+            document.querySelector("#action-con").style.display = "none";
+            document.querySelector("#user-con").style.display = "none";
+            displayUnauthenticatedTransactions();
+        } else {
+            console.log("Fehler beim Löschen der Karte, bitte versuche es später erneut");
+        }
+        document.querySelector("dialog").hidePopover();
     });
 })();

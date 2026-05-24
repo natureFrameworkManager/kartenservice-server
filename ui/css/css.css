@@ -16,6 +16,7 @@
     --color-gray-400: oklch(70.7% 0.022 261.325);
     --color-gray-500: oklch(55.1% 0.027 264.364);
     --color-gray-700: oklch(37.3% 0.034 259.733);
+    --color-black: #000;
     --color-white: #fff;
     --spacing: 0.25rem;
     --text-xs: 0.75rem;
@@ -941,6 +942,18 @@ div h2 {
   margin-top: calc(var(--spacing) * 2);
 }
 dialog {
+  margin: auto;
+  background-color: transparent;
+}
+dialog::backdrop {
+  background-color: color-mix(in srgb, #000 50%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-black) 50%, transparent);
+  }
+}
+dialog div.modal-surface {
+  margin-inline: auto;
+  margin-block: auto;
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 4);
@@ -965,12 +978,12 @@ dialog p {
   font-size: var(--text-sm);
   line-height: calc(var(--spacing) * 6);
 }
-dialog div {
+dialog div.modal-action-con {
   display: flex;
   width: 100%;
   gap: calc(var(--spacing) * 2);
 }
-dialog div button {
+dialog div.modal-action-con button {
   width: 100%;
   &:first-child {
     background-color: var(--color-red-600);
