@@ -425,3 +425,59 @@ dialog div.modal-action-con button {
 body > div {
     @apply ml-64 p-6;
 }
+
+/* Introduction overlay */
+#intro-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4;
+}
+#intro-overlay.hidden {
+    @apply hidden;
+}
+#intro-surface {
+    @apply bg-surface-background rounded-xl shadow-lg dark:shadow-none border border-border w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col gap-6 p-8;
+}
+#intro-header {
+    @apply flex flex-col items-center text-center gap-2;
+}
+#intro-logo {
+    @apply text-primary text-5xl mb-1;
+}
+#intro-header h1 {
+    @apply text-3xl font-bold;
+}
+#intro-header p {
+    @apply text-gray-500 text-sm max-w-md;
+}
+#intro-sections {
+    @apply flex flex-col gap-4;
+}
+.intro-section {
+    @apply flex gap-4 items-start bg-surface rounded-lg border border-border p-4;
+}
+.intro-section-icon {
+    @apply text-primary text-2xl mt-0.5 shrink-0;
+}
+.intro-section h3 {
+    @apply font-semibold mb-1;
+}
+.intro-section p {
+    @apply text-sm text-gray-500 leading-relaxed;
+}
+.intro-section p a {
+    @apply text-blue-500 dark:text-blue-400 hover:underline;
+}
+.intro-section code {
+    @apply bg-surface border border-border rounded px-1 py-0.5 text-xs font-mono;
+}
+#intro-actions {
+    @apply flex items-center justify-between gap-4 pt-2 border-t border-border;
+}
+#intro-dont-show-again-label {
+    @apply flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none;
+}
+#intro-dont-show-again-label input {
+    @apply cursor-pointer;
+}
+#intro-close-btn {
+    @apply px-6 py-2;
+}

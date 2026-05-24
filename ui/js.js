@@ -694,7 +694,7 @@ async function loginFlow() {
 }
 
 function changeView(viewId) {
-    document.querySelectorAll("body > div").forEach(div => {
+    document.querySelectorAll("body > div:not(#intro-overlay)").forEach(div => {
         if (div.id === viewId) {
             div.style.display = "";
         } else {
@@ -1048,5 +1048,32 @@ changeView("meals-view");
             document.querySelector("#sync-transactions-btn"),
             statusEl
         );
+    });
+
+    // Introduction overlay
+    const introOverlay = document.querySelector("#intro-overlay");
+    const introCloseBtn = document.querySelector("#intro-close-btn");
+    const introDontShowAgain = document.querySelector("#intro-dont-show-again");
+
+    if (localStorage.getItem("introSeen") !== "true") {
+        introOverlay.classList.remove("hidden");
+    } else {
+        introOverlay.classList.add("hidden");
+    }
+
+    introCloseBtn.addEventListener("click", () => {
+        if (introDontShowAgain.checked) {
+            localStorage.setItem("introSeen", "true");
+        }
+        introOverlay.classList.add("hidden");
+    });
+
+    introOverlay.addEventListener("click", (event) => {
+        if (event.target === introOverlay) {
+            if (introDontShowAgain.checked) {
+                localStorage.setItem("introSeen", "true");
+            }
+            introOverlay.classList.add("hidden");
+        }
     });
 })();
