@@ -35,14 +35,16 @@ await fastify.register(fastifySSE);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 await fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'docs'),
-    prefix: '/docs/',
+    prefix: '/docs',
     index: 'index.html',
+    redirect: true
 });
 await fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'ui'),
-    prefix: '/ui/',
+    prefix: '/ui',
     index: 'index.html',
     decorateReply: false,
+    redirect: true
 });
 
 /**
