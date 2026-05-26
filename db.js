@@ -78,23 +78,25 @@ db.exec(`
 db.exec(`
     CREATE TABLE IF NOT EXISTS mensa_locations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        openMensaId INTEGER NOT NULL UNIQUE,
+        openMensaId INTEGER UNIQUE,
         mensaXMLId INTEGER UNIQUE,
         name TEXT NOT NULL,
-        internalName TEXT
+        internalName TEXT,
+        UNIQUE(name, internalName)
     );
     INSERT OR IGNORE INTO mensa_locations (openMensaId, mensaXMLId, name, internalName) VALUES 
     (63, 106, 'Mensa am Park', 'MaP Mensaküche Leitung'),
-    (64, 118, 'Mensa Academica', NULL),
+    (64, 118, 'Mensa Academica', 'Mensaküche Ltg. Academica'),
     (65, 115, 'Mensa am Elsterbecken', 'Mensaküche amElsterbecken'),
-    (66, 170, 'Mensa An den Tierkliniken', NULL),
+    (66, 170, 'Mensa An den Tierkliniken', 'Cafeteria Tierklinik'),
     (68, 111, 'Mensa Petersteinweg', 'PSW Mensaküche Leitung'),
-    (67, 162, 'Mensa Liebigstraße/Mensa und Cafeteria am Medizincampus', NULL),
+    (67, 162, 'Mensa Liebigstraße/Mensa und Cafeteria am Medizincampus', 'Mensaküche MaM'),
     (69, 140, 'Mensa/Cafetaria Schönauer Straße', NULL),
-    (70, 153, 'Cafeteria Dittrichring', NULL),
+    (70, 153, 'Cafeteria Dittrichring', 'Cafeteria Dittrichring'),
     (71, null, 'Cafeteria Koburger Straße', NULL),
-    (72, 127, 'Cafeteria Philipp-Rosenthal-Straße/Mensaria am Botanischen Garten', NULL),
-    (73, null, 'Cafeteria Wächterstraße', NULL);
+    (72, 127, 'Cafeteria Philipp-Rosenthal-Straße/Mensaria am Botanischen Garten', 'Mensaria am Bota. Garten'),
+    (73, null, 'Cafeteria Wächterstraße', NULL),
+    (null, null, 'Cafeteria im Musikviertel/Albertina', 'Cafeteria im Musikviertel');
 `);
 db.exec(`
     CREATE TABLE IF NOT EXISTS meals (
