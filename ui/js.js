@@ -6,6 +6,7 @@ document.documentElement.classList.toggle(
 ,);
 
 let host = "localhost:3000";
+let proto = "https";
 
 let cardnumber = sessionStorage.getItem('cardnumber');
 let password = sessionStorage.getItem('password');
@@ -19,11 +20,35 @@ const currencyFormatter = new Intl.NumberFormat("de-DE", {
 });
 
 /**
+ * Detects whether the host supports HTTPS or redirects from HTTP to HTTPS.
+ * Tries HTTPS first; if that fails, tries HTTP and follows any redirect to check
+ * whether the server ultimately serves over HTTPS.
+ * @param {string} hostName
+ * @returns {Promise<"https"|"http">}
+ */
+async function detectProto(hostName) {
+    try {
+        await fetch(`https://${hostName}/locations`, { method: "HEAD" });
+        return "https";
+    } catch {
+        try {
+            const response = await fetch(`http://${hostName}/locations`, { method: "HEAD", redirect: "follow" });
+            if (response.url.startsWith("https://")) {
+                return "https";
+            }
+            return "http";
+        } catch {
+            return "http";
+        }
+    }
+}
+
+/**
  * 
  * @returns {Promise<{id: number, name: string, internalName: string, mensaXMLId: number, openMensaId: number}[]>}
  */
 async function getLocations() {
-    var response = await fetch(`http://${host}/locations`);
+    var response = await fetch(`${proto}://${host}/locations`);
     var data = await response.json();
     return data;
 }
@@ -54,11 +79,11 @@ async function getLocations() {
  */
 async function getMeals(locationId = null, date = new Date(), name = null) {
     if (locationId === null) {
-        var response = await fetch(`http://${host}/meals/${date.toISOString().split("T")[0]}`);
+        var response = await fetch(`${proto}://${host}/meals/${date.toISOString().split("T")[0]}`);
     } else if (name === null) {
-        var response = await fetch(`http://${host}/meals/${date.toISOString().split("T")[0]}/${locationId}`);
+        var response = await fetch(`${proto}://${host}/meals/${date.toISOString().split("T")[0]}/${locationId}`);
     } else {
-        var response = await fetch(`http://${host}/meals/${date.toISOString().split("T")[0]}/${locationId}/${encodeURIComponent(name)}`);
+        var response = await fetch(`${proto}://${host}/meals/${date.toISOString().split("T")[0]}/${locationId}/${encodeURIComponent(name)}`);
     }
     if (response.status == 404) {
         return [];
@@ -79,13 +104,13 @@ async function getMeals(locationId = null, date = new Date(), name = null) {
  */
 async function getCardMeals(cardnumber, password, date = null) {
     if (date === null) {
-        var response = await fetch(`http://${host}/meals/card/${cardnumber}`, {
+        var response = await fetch(`${proto}://${host}/meals/card/${cardnumber}`, {
             headers: {
                 "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
             }
         });
     } else {
-        var response = await fetch(`http://${host}/meals/card/${cardnumber}/${date.toISOString().split("T")[0]}`, {
+        var response = await fetch(`${proto}://${host}/meals/card/${cardnumber}/${date.toISOString().split("T")[0]}`, {
             headers: {
                 "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
             }
@@ -106,7 +131,7 @@ async function getCardMeals(cardnumber, password, date = null) {
  * @param {string} internalCategory
  */
 async function updateMealInternalCategory(mealId, internalCategory) {
-    var response = await fetch(`http://${host}/meals/${mealId}`, {
+    var response = await fetch(`${proto}://${host}/meals/${mealId}`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json"
@@ -136,7 +161,7 @@ async function updateMealInternalCategory(mealId, internalCategory) {
  * @returns {Promise<Transaction[]>}
  */
 async function getTransactions(cardnumber, password) {
-    var response = await fetch(`http://${host}/trans/${cardnumber}`, {
+    var response = await fetch(`${proto}://${host}/trans/${cardnumber}`, {
         headers: {
             "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
         }
@@ -169,7 +194,7 @@ async function getTransactions(cardnumber, password) {
  * @returns {Promise<TransactionPositions[]>}
  */
 async function getTransactionPositions(cardnumber, password) {
-    var response = await fetch(`http://${host}/transpos/${cardnumber}`, {
+    var response = await fetch(`${proto}://${host}/transpos/${cardnumber}`, {
         headers: {
             "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
         }
@@ -649,7 +674,7 @@ async function loginFlow() {
     var passwordInput = document.querySelector("#login-con input#password-input");
     var passwordValue = passwordInput.value;
 
-    var response = await fetch(`http://${host}/card`, {
+    var response = await fetch(`${proto}://${host}/card`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -730,6 +755,7 @@ changeView("meals-view");
     }
 
     try {
+        proto = await detectProto(host);
         await mealsLocationsFlow();
         await transactionDiplayFlow();
     } catch (error) {
@@ -758,6 +784,7 @@ changeView("meals-view");
         console.log("Host geändert zu:", event.target.value);
         try {
             host = event.target.value;
+            proto = await detectProto(host);
             await mealsLocationsFlow();
             await transactionDiplayFlow();
         } catch (error) {
@@ -775,6 +802,7 @@ changeView("meals-view");
     document.querySelector("#host-con span").addEventListener("click", async () => {
         document.querySelector("#host-input").value = window.location.host;
         host = window.location.host;
+        proto = await detectProto(host);
         try {
             await mealsLocationsFlow();
             await transactionDiplayFlow();
@@ -816,7 +844,7 @@ changeView("meals-view");
         displayUnauthenticatedTransactions();
     });
     document.querySelector("dialog button#confirm-delete-card-btn").addEventListener("click", async () => {
-        var response = await fetch(`http://${host}/card`, {
+        var response = await fetch(`${proto}://${host}/card`, {
             method: "DELETE",
             body: JSON.stringify({
                 cardNumber: cardnumber
@@ -867,7 +895,7 @@ changeView("meals-view");
         var mensaXMLIdStr = document.querySelector("#location-view #location-studenwerk-id-input").value.trim();
         var openMensaId = openMensaIdStr ? Number(openMensaIdStr) : null;
         var mensaXMLId = mensaXMLIdStr ? Number(mensaXMLIdStr) : null;
-        var response = await fetch(`http://${host}/locations`, {
+        var response = await fetch(`${proto}://${host}/locations`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -1007,7 +1035,7 @@ changeView("meals-view");
 
     document.querySelector("#sync-open-mensa-btn").addEventListener("click", () => {
         runSyncSSE(
-            `http://${host}/fetch/open-mensa/sse`,
+            `${proto}://${host}/fetch/open-mensa/sse`,
             null,
             document.querySelector("#sync-open-mensa-btn"),
             document.querySelector("#sync-open-mensa-status")
@@ -1016,7 +1044,7 @@ changeView("meals-view");
 
     document.querySelector("#sync-mensa-xml-btn").addEventListener("click", () => {
         runSyncSSE(
-            `http://${host}/fetch/mensa-xml/sse`,
+            `${proto}://${host}/fetch/mensa-xml/sse`,
             null,
             document.querySelector("#sync-mensa-xml-btn"),
             document.querySelector("#sync-mensa-xml-status")
@@ -1030,7 +1058,7 @@ changeView("meals-view");
             return;
         }
         runSyncSSE(
-            `http://${host}/fetch/kartenservice/sse?cardNumber=${encodeURIComponent(cardnumber)}`,
+            `${proto}://${host}/fetch/kartenservice/sse?cardNumber=${encodeURIComponent(cardnumber)}`,
             btoa(cardnumber + ":" + password),
             document.querySelector("#sync-kartenservice-btn"),
             statusEl
@@ -1041,7 +1069,7 @@ changeView("meals-view");
         const hostUrl = document.querySelector("#sync-meals-host-input").value.trim();
         if (!hostUrl) return;
         runSyncSSE(
-            `http://${host}/sync/host/meals/sse?hostUrl=${encodeURIComponent(hostUrl)}`,
+            `${proto}://${host}/sync/host/meals/sse?hostUrl=${encodeURIComponent(hostUrl)}`,
             null,
             document.querySelector("#sync-meals-btn"),
             document.querySelector("#sync-meals-status")
@@ -1057,7 +1085,7 @@ changeView("meals-view");
         const hostUrl = document.querySelector("#sync-transactions-host-input").value.trim();
         if (!hostUrl) return;
         runSyncSSE(
-            `http://${host}/sync/host/transactions/sse?hostUrl=${encodeURIComponent(hostUrl)}&cardNumber=${encodeURIComponent(cardnumber)}`,
+            `${proto}://${host}/sync/host/transactions/sse?hostUrl=${encodeURIComponent(hostUrl)}&cardNumber=${encodeURIComponent(cardnumber)}`,
             btoa(cardnumber + ":" + password),
             document.querySelector("#sync-transactions-btn"),
             statusEl
