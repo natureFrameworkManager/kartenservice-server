@@ -143,11 +143,13 @@ export async function fetchTransAndTranspos(cardnumber, password, /** @type {((d
     onProgress?.({ step: 'auth', message: 'Authenticating with Kartenservice...' });
     const { authToken, days } = await getAuthTokenWithDays(cardnumber, password);
     var today = new Date(new Date().setHours(0, 0, 0, 0));
+    // add 1 day to end date to include transactions of today, as the API seems to use an exclusive end date
+    var endDate = new Date(today.getTime() + (1 * 24 * 60 * 60 * 1000));
     var pastDate = new Date(today.getTime() - (days * 24 * 60 * 60 * 1000));
     onProgress?.({ step: 'fetch_transactions', message: 'Fetching transactions...' });
-    const transactions = await getTransactions(cardnumber, pastDate, today, authToken);
+    const transactions = await getTransactions(cardnumber, pastDate, endDate, authToken);
     onProgress?.({ step: 'fetch_transpos', message: 'Fetching transaction positions...' });
-    const transactionPositions = await getTransactionPositions(cardnumber, pastDate, today, authToken);
+    const transactionPositions = await getTransactionPositions(cardnumber, pastDate, endDate, authToken);
     onProgress?.({ step: 'insert', message: `Inserting ${transactions.length} transactions and ${transactionPositions.length} positions...`, count: transactions.length + transactionPositions.length });
     insertTransList(transactions, cardnumber);
     insertTransPosList(transactionPositions, cardnumber);
