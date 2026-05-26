@@ -5,8 +5,8 @@ document.documentElement.classList.toggle(
         (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
 ,);
 
-let host = "localhost:3000";
-let proto = "https";
+let host = "";
+let proto = "";
 
 let cardnumber = sessionStorage.getItem('cardnumber');
 let password = sessionStorage.getItem('password');
@@ -754,6 +754,8 @@ changeView("meals-view");
         document.querySelector("#user-con").style.display = "";
     }
 
+    host = window.location.host;
+    console.log("Aktueller Host:", host);
     try {
         proto = await detectProto(host);
         await mealsLocationsFlow();

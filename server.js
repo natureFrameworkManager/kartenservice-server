@@ -3,6 +3,9 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifySSE from '@fastify/sse';
+import fastifyStatic from '@fastify/static';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
@@ -28,6 +31,13 @@ await fastify.register(cors, {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 });
 await fastify.register(fastifySSE);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+await fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'ui'),
+    prefix: '/ui/',
+    index: 'index.html',
+});
 
 /**
  * Fastify preHandler hook that verifies Basic auth credentials against stored card secrets.
