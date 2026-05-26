@@ -5,10 +5,10 @@ document.documentElement.classList.toggle(
         (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
 ,);
 
-let host = "localhost:3001";
+let host = "localhost:3000";
 
-let cardnumber;
-let password;
+let cardnumber = sessionStorage.getItem('cardnumber');
+let password = sessionStorage.getItem('password');
 
 let locations = [];
 let allTransactions = {};
@@ -664,6 +664,8 @@ async function loginFlow() {
         console.log("Karte existiert bereits, Daten wurden aktualisiert");
         cardnumber = cardId;
         password = passwordValue;
+        sessionStorage.setItem('cardnumber', cardId);
+        sessionStorage.setItem('password', passwordValue);
         document.querySelector("#login-con").style.display = "none";
         document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
@@ -676,6 +678,8 @@ async function loginFlow() {
         console.log("Karte erfolgreich hinzugefügt");
         cardnumber = cardId;
         password = passwordValue;
+        sessionStorage.setItem('cardnumber', cardId);
+        sessionStorage.setItem('password', passwordValue);
         document.querySelector("#login-con").style.display = "none";
         document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
@@ -718,7 +722,13 @@ document.querySelectorAll("aside nav span").forEach(button => {
 });
 changeView("meals-view");
 
-(async () => {    
+(async () => {
+    if (cardnumber && password) {
+        document.querySelector("#login-con").style.display = "none";
+        document.querySelector("#action-con").style.display = "none";
+        document.querySelector("#user-con").style.display = "";
+    }
+
     try {
         await mealsLocationsFlow();
         await transactionDiplayFlow();
@@ -798,6 +808,8 @@ changeView("meals-view");
     document.querySelector("#user-con button").addEventListener("click", () => {
         cardnumber = null;
         password = null;
+        sessionStorage.removeItem('cardnumber');
+        sessionStorage.removeItem('password');
         document.querySelector("#login-con").style.display = "";
         document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "none";
@@ -818,6 +830,8 @@ changeView("meals-view");
             console.log("Karte erfolgreich gelöscht");
             cardnumber = null;
             password = null;
+            sessionStorage.removeItem('cardnumber');
+            sessionStorage.removeItem('password');
             document.querySelector("#login-con").style.display = "";
             document.querySelector("#action-con").style.display = "none";
             document.querySelector("#user-con").style.display = "none";
@@ -904,11 +918,11 @@ changeView("meals-view");
     /**
      * Runs a sync by connecting to an SSE endpoint and streaming progress to the UI.
      * @param {string} url SSE endpoint URL (full, including host)
-     * @param {RequestInit} fetchOptions
+     * @param {string|null} authToken Base64-encoded "cardnumber:password" for authenticated endpoints, or null
      * @param {HTMLButtonElement} btn
      * @param {HTMLElement} statusEl
      */
-    async function runSyncSSE(url, fetchOptions, btn, statusEl) {
+    function runSyncSSE(url, authToken, btn, statusEl) {
         const progressCon = document.querySelector(`#${statusEl.id.replace('-status', '-progress')}`);
         const progressBar = progressCon?.querySelector('.sync-progress-bar');
 
@@ -932,69 +946,69 @@ changeView("meals-view");
             if (progressBar) progressBar.style.width = '';
         }
 
+        if (authToken) {
+            const urlObj = new URL(url);
+            urlObj.searchParams.set('token', authToken);
+            url = urlObj.toString();
+        }
+
         btn.disabled = true;
         statusEl.textContent = "Verbinde...";
         showProgress();
-        try {
-            const response = await fetch(url, fetchOptions);
-            if (!response.ok) {
-                const errData = await response.json();
-                statusEl.textContent = `Fehler: ${errData.error}`;
-                btn.disabled = false;
-                hideProgress();
-                return;
-            }
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value, { stream: true });
-                const parts = buffer.split('\n\n');
-                buffer = parts.pop() ?? '';
-                for (const part of parts) {
-                    const lines = part.split('\n');
-                    let eventType = 'message';
-                    let data = '';
-                    for (const line of lines) {
-                        if (line.startsWith('event: ')) eventType = line.slice(7).trim();
-                        else if (line.startsWith('data: ')) data = line.slice(6).trim();
-                    }
-                    if (!data) continue;
-                    const payload = JSON.parse(data);
-                    if (eventType === 'progress') {
-                        statusEl.textContent = payload.total
-                            ? `${payload.message} (${payload.done}/${payload.total})`
-                            : payload.message;
-                        if (payload.total) {
-                            setProgress((payload.done / payload.total) * 100);
-                        } else {
-                            setIndeterminate();
-                        }
-                    } else if (eventType === 'done') {
-                        setProgress(100);
-                        statusEl.textContent = "Fertig";
-                        btn.disabled = false;
-                        setTimeout(() => hideProgress(), 800);
-                    } else if (eventType === 'error') {
-                        statusEl.textContent = `Fehler: ${payload.message}`;
-                        btn.disabled = false;
-                        hideProgress();
-                    }
-                }
-            }
-        } catch {
-            statusEl.textContent = "Verbindungsfehler";
+
+        console.log(url);
+        const es = new EventSource(url);
+        let finished = false;
+
+        function finish(message, isError = false) {
+            if (finished) return;
+            finished = true;
+            es.close();
+            statusEl.textContent = message;
             btn.disabled = false;
-            hideProgress();
+            if (isError) hideProgress();
         }
+
+        es.addEventListener('progress', (e) => {
+            const payload = JSON.parse(/** @type {MessageEvent} */ (e).data);
+            statusEl.textContent = payload.total
+                ? `${payload.message} (${payload.done}/${payload.total})`
+                : payload.message;
+            if (payload.total) {
+                setProgress((payload.done / payload.total) * 100);
+            } else {
+                setIndeterminate();
+            }
+        });
+
+        es.addEventListener('done', () => {
+            if (finished) return;
+            finished = true;
+            es.close();
+            setProgress(100);
+            statusEl.textContent = "Fertig";
+            btn.disabled = false;
+            setTimeout(() => hideProgress(), 800);
+        });
+
+        es.addEventListener('error', (e) => {
+            if (e instanceof MessageEvent) {
+                try {
+                    const payload = JSON.parse(e.data);
+                    finish(`Fehler: ${payload.message}`, true);
+                } catch {
+                    finish("Serverfehler", true);
+                }
+            } else if (!finished) {
+                finish("Verbindungsfehler", true);
+            }
+        });
     }
 
     document.querySelector("#sync-open-mensa-btn").addEventListener("click", () => {
         runSyncSSE(
             `http://${host}/fetch/open-mensa/sse`,
-            {},
+            null,
             document.querySelector("#sync-open-mensa-btn"),
             document.querySelector("#sync-open-mensa-status")
         );
@@ -1003,7 +1017,7 @@ changeView("meals-view");
     document.querySelector("#sync-mensa-xml-btn").addEventListener("click", () => {
         runSyncSSE(
             `http://${host}/fetch/mensa-xml/sse`,
-            {},
+            null,
             document.querySelector("#sync-mensa-xml-btn"),
             document.querySelector("#sync-mensa-xml-status")
         );
@@ -1017,7 +1031,7 @@ changeView("meals-view");
         }
         runSyncSSE(
             `http://${host}/fetch/kartenservice/sse?cardNumber=${encodeURIComponent(cardnumber)}`,
-            { headers: { "Authorization": `Basic ${btoa(cardnumber + ":" + password)}` } },
+            btoa(cardnumber + ":" + password),
             document.querySelector("#sync-kartenservice-btn"),
             statusEl
         );
@@ -1028,7 +1042,7 @@ changeView("meals-view");
         if (!hostUrl) return;
         runSyncSSE(
             `http://${host}/sync/host/meals/sse?hostUrl=${encodeURIComponent(hostUrl)}`,
-            {},
+            null,
             document.querySelector("#sync-meals-btn"),
             document.querySelector("#sync-meals-status")
         );
@@ -1044,7 +1058,7 @@ changeView("meals-view");
         if (!hostUrl) return;
         runSyncSSE(
             `http://${host}/sync/host/transactions/sse?hostUrl=${encodeURIComponent(hostUrl)}&cardNumber=${encodeURIComponent(cardnumber)}`,
-            { headers: { "Authorization": `Basic ${btoa(cardnumber + ":" + password)}` } },
+            btoa(cardnumber + ":" + password),
             document.querySelector("#sync-transactions-btn"),
             statusEl
         );

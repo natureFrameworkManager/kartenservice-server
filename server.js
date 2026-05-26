@@ -36,7 +36,9 @@ fastify.register(fastifySSE);
  * @param {import('fastify').FastifyReply} reply
  */
 async function authenticate(request, reply) {
-    const authHeader = request.headers['authorization'];
+    // EventSource cannot send custom headers; accept Base64 credentials via ?token= as fallback
+    const tokenParam = /** @type {any} */ (request.query).token;
+    const authHeader = request.headers['authorization'] ?? (tokenParam ? `Basic ${tokenParam}` : undefined);
     if (!authHeader || !authHeader.startsWith('Basic ')) {
         reply.code(401).header('WWW-Authenticate', 'Basic realm="kartenservice"').send({ error: 'Authentication required' });
         return;
@@ -57,13 +59,15 @@ async function authenticate(request, reply) {
     /** @type {any} */ (request).authenticatedCard = cardnumber;
 }
 
+fastify.register(async (instance) => {
+
 /** Returns all meals, optionally filtered by date, canteen, and internal category. */
-fastify.get('/meals', async (request, reply) => {
+instance.get('/meals', async (request, reply) => {
     return getMeals();
 });
 
 /** Returns all meals for the given date. */
-fastify.get('/meals/:date', async (request, reply) => {
+instance.get('/meals/:date', async (request, reply) => {
     const { date } = /** @type {ParamsDate} */ (request.params);
     const meals = getMeals(date);
     if (meals.length === 0) {
@@ -74,7 +78,7 @@ fastify.get('/meals/:date', async (request, reply) => {
 });
 
 /** Returns all meals for the given date and canteen. */
-fastify.get('/meals/:date/:canteenId', async (request, reply) => {
+instance.get('/meals/:date/:canteenId', async (request, reply) => {
     const { date, canteenId } = /** @type {ParamsDateCanteen} */ (request.params);
     const meals = getMeals(date, Number(canteenId));
     if (meals.length === 0) {
@@ -85,7 +89,7 @@ fastify.get('/meals/:date/:canteenId', async (request, reply) => {
 });
 
 /** Returns a single meal by date, canteen, and meal name. */
-fastify.get('/meals/:date/:canteenId/:mealName', async (request, reply) => {
+instance.get('/meals/:date/:canteenId/:mealName', async (request, reply) => {
     const { date, canteenId, mealName } = /** @type {ParamsDateCanteenMeal} */ (request.params);
     const meals = getMeals(date, Number(canteenId), mealName);
     if (meals.length === 0) {
@@ -96,7 +100,7 @@ fastify.get('/meals/:date/:canteenId/:mealName', async (request, reply) => {
 });
 
 /** Returns all meals matched to the transactions of the authenticated card. */
-fastify.get('/meals/card/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
+instance.get('/meals/card/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber } = /** @type {ParamsCardNumber} */ (request.params);
     if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
         reply.code(403).send({ error: 'Forbidden' });
@@ -106,7 +110,7 @@ fastify.get('/meals/card/:cardNumber', { preHandler: authenticate }, async (requ
 });
 
 /** Returns meals matched to the transactions of the authenticated card on a specific date. */
-fastify.get('/meals/card/:cardNumber/:date', { preHandler: authenticate }, async (request, reply) => {
+instance.get('/meals/card/:cardNumber/:date', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber, date } = /** @type {ParamsCardNumberDate} */ (request.params);
     if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
         reply.code(403).send({ error: 'Forbidden' });
@@ -116,7 +120,7 @@ fastify.get('/meals/card/:cardNumber/:date', { preHandler: authenticate }, async
 });
 
 /** Returns all transactions for the authenticated card. */
-fastify.get('/trans/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
+instance.get('/trans/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber } = /** @type {ParamsCardNumber} */ (request.params);
     if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
         reply.code(403).send({ error: 'Forbidden' });
@@ -126,7 +130,7 @@ fastify.get('/trans/:cardNumber', { preHandler: authenticate }, async (request, 
 });
 
 /** Returns all transaction positions for the authenticated card. */
-fastify.get('/transpos/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
+instance.get('/transpos/:cardNumber', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber } = /** @type {ParamsCardNumber} */ (request.params);
     if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
         reply.code(403).send({ error: 'Forbidden' });
@@ -136,7 +140,7 @@ fastify.get('/transpos/:cardNumber', { preHandler: authenticate }, async (reques
 });
 
 /** Triggers an async fetch of meals from the OpenMensa API for the past 7 days. */
-fastify.post('/fetch/open-mensa', async (request, reply) => {
+instance.post('/fetch/open-mensa', async (request, reply) => {
     const startDate = new Date(new Date().setDate(new Date().getDate() - 7));
     fetchOpenMensaMeals(startDate)
         .then(() => updateMealLookup())
@@ -145,7 +149,7 @@ fastify.post('/fetch/open-mensa', async (request, reply) => {
 });
 
 /** Triggers an async fetch of meals from the Mensa XML feed for the past week. */
-fastify.post('/fetch/mensa-xml', async (request, reply) => {
+instance.post('/fetch/mensa-xml', async (request, reply) => {
     const startDate = new Date(new Date().setDate(new Date().getDate() - 7));
     fetchMensaXMLMeals(startDate)
         .then(() => updateMealLookup())
@@ -154,7 +158,7 @@ fastify.post('/fetch/mensa-xml', async (request, reply) => {
 });
 
 /** Registers a new card by validating credentials against the Kartenservice API. */
-fastify.post('/card', async (request, reply) => {
+instance.post('/card', async (request, reply) => {
     const { cardNumber, password } = /** @type {BodyCard} */ (request.body) ?? {};
     if (!cardNumber || !password) {
         reply.code(400).send({ error: 'cardNumber and password are required' });
@@ -177,7 +181,7 @@ fastify.post('/card', async (request, reply) => {
 });
 
 /** Updates the stored password for an existing card after re-validating credentials. */
-fastify.put('/card', async (request, reply) => {
+instance.put('/card', async (request, reply) => {
     const { cardNumber, password } = /** @type {BodyCard} */ (request.body) ?? {};
     if (!cardNumber || !password) {
         reply.code(400).send({ error: 'cardNumber and password are required' });
@@ -199,7 +203,7 @@ fastify.put('/card', async (request, reply) => {
 });
 
 /** Deletes the authenticated card from storage. */
-fastify.delete('/card', { preHandler: authenticate }, async (request, reply) => {
+instance.delete('/card', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber } = /** @type {BodyCardNumber} */ (request.body) ?? {};
     if (!cardNumber) {
         reply.code(400).send({ error: 'cardNumber is required' });
@@ -219,7 +223,7 @@ fastify.delete('/card', { preHandler: authenticate }, async (request, reply) => 
 });
 
 /** Triggers an async fetch of transactions and transaction positions for the authenticated card. */
-fastify.post('/fetch/kartenservice', { preHandler: authenticate }, async (request, reply) => {
+instance.post('/fetch/kartenservice', { preHandler: authenticate }, async (request, reply) => {
     const { cardNumber } = /** @type {BodyCardNumber} */ (request.body) ?? {};
     if (!cardNumber) {
         reply.code(400).send({ error: 'cardNumber is required' });
@@ -241,12 +245,12 @@ fastify.post('/fetch/kartenservice', { preHandler: authenticate }, async (reques
 });
 
 /** Returns all mensa locations. */
-fastify.get('/locations', async (request, reply) => {
+instance.get('/locations', async (request, reply) => {
     return getMensaLocations();
 });
 
 /** Adds a new mensa location. At least one of openMensaId or mensaXMLId must be provided. */
-fastify.post('/locations', async (request, reply) => {
+instance.post('/locations', async (request, reply) => {
     const { name, internalName, openMensaId, mensaXMLId } = /** @type {any} */ (request.body) ?? {};
     if (!name) {
         reply.code(400).send({ error: 'name is required' });
@@ -269,7 +273,7 @@ fastify.post('/locations', async (request, reply) => {
 });
 
 /** Updates all fields of an existing mensa location. */
-fastify.put('/locations/:id', async (request, reply) => {
+instance.put('/locations/:id', async (request, reply) => {
     const { id } = /** @type {{id: string}} */ (request.params);
     const { name, internalName, openMensaId, mensaXMLId } = /** @type {any} */ (request.body) ?? {};
     if (!name) {
@@ -297,7 +301,7 @@ fastify.put('/locations/:id', async (request, reply) => {
 });
 
 /** Updates the internalCategory of a single meal. */
-fastify.patch('/meals/:id', async (request, reply) => {
+instance.patch('/meals/:id', async (request, reply) => {
     const { id } = /** @type {{id: string}} */ (request.params);
     const { internalCategory } = /** @type {any} */ (request.body) ?? {};
     if (internalCategory === undefined) {
@@ -309,7 +313,7 @@ fastify.patch('/meals/:id', async (request, reply) => {
 });
 
 /** Fetches meals and locations from a remote server running the same API and stores them locally. */
-fastify.post('/sync/host/meals', async (request, reply) => {
+instance.post('/sync/host/meals', async (request, reply) => {
     const { hostUrl } = /** @type {any} */ (request.body) ?? {};
     if (!hostUrl) {
         reply.code(400).send({ error: 'hostUrl is required' });
@@ -346,7 +350,7 @@ fastify.post('/sync/host/meals', async (request, reply) => {
 });
 
 /** Fetches transactions for the authenticated card from a remote server and stores them locally. */
-fastify.post('/sync/host/transactions', { preHandler: authenticate }, async (request, reply) => {
+instance.post('/sync/host/transactions', { preHandler: authenticate }, async (request, reply) => {
     const { hostUrl, cardNumber } = /** @type {any} */ (request.body) ?? {};
     if (!hostUrl || !cardNumber) {
         reply.code(400).send({ error: 'hostUrl and cardNumber are required' });
@@ -391,37 +395,47 @@ fastify.post('/sync/host/transactions', { preHandler: authenticate }, async (req
 });
 
 /** Streams SSE progress events while fetching meals from the OpenMensa API. */
-fastify.get('/fetch/open-mensa/sse', { sse: true }, async function(request, reply) {
+instance.get('/fetch/open-mensa/sse', { sse: true }, async function(request, reply) {
+    if (!reply.sse) {
+        reply.code(406).send({ error: 'This endpoint requires Accept: text/event-stream' });
+        return;
+    }
+    const safeSend = (/** @type {any} */ event) => reply.sse.isConnected ? reply.sse.send(event).catch(() => {}) : Promise.resolve();
     const startDate = new Date(new Date().setDate(new Date().getDate() - 7));
     try {
-        await reply.sse.send({ event: 'progress', data: { step: 'start', message: 'Starting OpenMensa fetch...' } });
-        const meals = await fetchOpenMensaMeals(startDate, (data) => reply.sse.send({ event: 'progress', data }));
-        await reply.sse.send({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
+        await safeSend({ event: 'progress', data: { step: 'start', message: 'Starting OpenMensa fetch...' } });
+        const meals = await fetchOpenMensaMeals(startDate, (data) => safeSend({ event: 'progress', data }));
+        await safeSend({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
         updateMealLookup();
-        await reply.sse.send({ event: 'done', data: { message: 'OpenMensa sync completed', count: meals.length } });
+        await safeSend({ event: 'done', data: { message: 'OpenMensa sync completed', count: meals.length } });
     } catch (err) {
         fastify.log.error(err, 'Error in open mensa SSE fetch');
-        await reply.sse.send({ event: 'error', data: { message: /** @type {any} */ (err).message } });
+        await safeSend({ event: 'error', data: { message: /** @type {any} */ (err).message } });
     }
 });
 
 /** Streams SSE progress events while fetching meals from the Mensa XML feed. */
-fastify.get('/fetch/mensa-xml/sse', { sse: true }, async function(request, reply) {
+instance.get('/fetch/mensa-xml/sse', { sse: true }, async function(request, reply) {
+    if (!reply.sse) {
+        reply.code(406).send({ error: 'This endpoint requires Accept: text/event-stream' });
+        return;
+    }
+    const safeSend = (/** @type {any} */ event) => reply.sse.isConnected ? reply.sse.send(event).catch(() => {}) : Promise.resolve();
     const startDate = new Date(new Date().setDate(new Date().getDate() - 7));
     try {
-        await reply.sse.send({ event: 'progress', data: { step: 'start', message: 'Starting Mensa XML fetch...' } });
-        const meals = await fetchMensaXMLMeals(startDate, (data) => reply.sse.send({ event: 'progress', data }));
-        await reply.sse.send({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
+        await safeSend({ event: 'progress', data: { step: 'start', message: 'Starting Mensa XML fetch...' } });
+        const meals = await fetchMensaXMLMeals(startDate, (data) => safeSend({ event: 'progress', data }));
+        await safeSend({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
         updateMealLookup();
-        await reply.sse.send({ event: 'done', data: { message: 'Mensa XML sync completed', count: meals.length } });
+        await safeSend({ event: 'done', data: { message: 'Mensa XML sync completed', count: meals.length } });
     } catch (err) {
         fastify.log.error(err, 'Error in mensa XML SSE fetch');
-        await reply.sse.send({ event: 'error', data: { message: /** @type {any} */ (err).message } });
+        await safeSend({ event: 'error', data: { message: /** @type {any} */ (err).message } });
     }
 });
 
 /** Streams SSE progress events while fetching transactions for the authenticated card from the Kartenservice API. */
-fastify.get('/fetch/kartenservice/sse', { sse: true, preHandler: authenticate }, async function(request, reply) {
+instance.get('/fetch/kartenservice/sse', { sse: true, preHandler: authenticate }, async function(request, reply) {
     const { cardNumber } = /** @type {any} */ (request.query);
     if (!cardNumber) {
         reply.code(400).send({ error: 'cardNumber query parameter is required' });
@@ -436,19 +450,24 @@ fastify.get('/fetch/kartenservice/sse', { sse: true, preHandler: authenticate },
         reply.code(404).send({ error: 'Card not found' });
         return;
     }
+    if (!reply.sse) {
+        reply.code(406).send({ error: 'This endpoint requires Accept: text/event-stream' });
+        return;
+    }
+    const safeSend = (/** @type {any} */ event) => reply.sse.isConnected ? reply.sse.send(event).catch(() => {}) : Promise.resolve();
     try {
-        const { trans, transpos } = await fetchTransAndTranspos(card.cardnumber, card.password, (data) => reply.sse.send({ event: 'progress', data }));
-        await reply.sse.send({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
+        const { trans, transpos } = await fetchTransAndTranspos(card.cardnumber, card.password, (data) => safeSend({ event: 'progress', data }));
+        await safeSend({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
         updateMealLookup();
-        await reply.sse.send({ event: 'done', data: { message: 'Kartenservice sync completed', count: trans.length + transpos.length } });
+        await safeSend({ event: 'done', data: { message: 'Kartenservice sync completed', count: trans.length + transpos.length } });
     } catch (err) {
         fastify.log.error(err, 'Error in kartenservice SSE fetch');
-        await reply.sse.send({ event: 'error', data: { message: /** @type {any} */ (err).message } });
+        await safeSend({ event: 'error', data: { message: /** @type {any} */ (err).message } });
     }
 });
 
 /** Streams SSE progress events while fetching meals and locations from a remote server. */
-fastify.get('/sync/host/meals/sse', { sse: true }, async function(request, reply) {
+instance.get('/sync/host/meals/sse', { sse: true }, async function(request, reply) {
     const { hostUrl } = /** @type {any} */ (request.query);
     if (!hostUrl) {
         reply.code(400).send({ error: 'hostUrl query parameter is required' });
@@ -466,32 +485,33 @@ fastify.get('/sync/host/meals/sse', { sse: true }, async function(request, reply
         return;
     }
     const baseUrl = parsedUrl.origin;
+    const safeSend = (/** @type {any} */ event) => reply.sse.isConnected ? reply.sse.send(event).catch(() => {}) : Promise.resolve();
     try {
-        await reply.sse.send({ event: 'progress', data: { step: 'fetch_locations', message: 'Fetching locations from remote server...' } });
+        await safeSend({ event: 'progress', data: { step: 'fetch_locations', message: 'Fetching locations from remote server...' } });
         const locationsRes = await fetch(`${baseUrl}/locations`);
         if (!locationsRes.ok) throw new Error(`Failed to fetch locations from remote: ${locationsRes.status}`);
         const remoteLocations = await locationsRes.json();
-        await reply.sse.send({ event: 'progress', data: { step: 'insert_locations', message: `Inserting ${remoteLocations.length} locations...`, count: remoteLocations.length } });
+        await safeSend({ event: 'progress', data: { step: 'insert_locations', message: `Inserting ${remoteLocations.length} locations...`, count: remoteLocations.length } });
         for (const loc of remoteLocations) {
             upsertLocationFromRemote(loc.name, loc.internalName ?? null, loc.openMensaId ?? null, loc.mensaXMLId ?? null);
         }
-        await reply.sse.send({ event: 'progress', data: { step: 'fetch_meals', message: 'Fetching meals from remote server...' } });
+        await safeSend({ event: 'progress', data: { step: 'fetch_meals', message: 'Fetching meals from remote server...' } });
         const mealsRes = await fetch(`${baseUrl}/meals`);
         if (!mealsRes.ok) throw new Error(`Failed to fetch meals from remote: ${mealsRes.status}`);
         const remoteMeals = await mealsRes.json();
-        await reply.sse.send({ event: 'progress', data: { step: 'insert_meals', message: `Inserting ${remoteMeals.length} meals...`, count: remoteMeals.length } });
+        await safeSend({ event: 'progress', data: { step: 'insert_meals', message: `Inserting ${remoteMeals.length} meals...`, count: remoteMeals.length } });
         insertMealsFromRemote(remoteMeals);
-        await reply.sse.send({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
+        await safeSend({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
         updateMealLookup();
-        await reply.sse.send({ event: 'done', data: { message: 'Host meals sync completed', inserted: { locations: remoteLocations.length, meals: remoteMeals.length } } });
+        await safeSend({ event: 'done', data: { message: 'Host meals sync completed', inserted: { locations: remoteLocations.length, meals: remoteMeals.length } } });
     } catch (err) {
         fastify.log.error(err, 'Error in host meals SSE sync');
-        await reply.sse.send({ event: 'error', data: { message: /** @type {any} */ (err).message } });
+        await safeSend({ event: 'error', data: { message: /** @type {any} */ (err).message } });
     }
 });
 
 /** Streams SSE progress events while fetching card transactions from a remote server. */
-fastify.get('/sync/host/transactions/sse', { sse: true, preHandler: authenticate }, async function(request, reply) {
+instance.get('/sync/host/transactions/sse', { sse: true, preHandler: authenticate }, async function(request, reply) {
     const { hostUrl, cardNumber } = /** @type {any} */ (request.query);
     if (!hostUrl || !cardNumber) {
         reply.code(400).send({ error: 'hostUrl and cardNumber query parameters are required' });
@@ -519,8 +539,9 @@ fastify.get('/sync/host/transactions/sse', { sse: true, preHandler: authenticate
     }
     const baseUrl = parsedUrl.origin;
     const authHeader = `Basic ${Buffer.from(`${card.cardnumber}:${card.password}`).toString('base64')}`;
+    const safeSend = (/** @type {any} */ event) => reply.sse.isConnected ? reply.sse.send(event).catch(() => {}) : Promise.resolve();
     try {
-        await reply.sse.send({ event: 'progress', data: { step: 'fetch_transactions', message: 'Fetching transactions from remote server...' } });
+        await safeSend({ event: 'progress', data: { step: 'fetch_transactions', message: 'Fetching transactions from remote server...' } });
         const [transRes, transposRes] = await Promise.all([
             fetch(`${baseUrl}/trans/${cardNumber}`, { headers: { 'Authorization': authHeader } }),
             fetch(`${baseUrl}/transpos/${cardNumber}`, { headers: { 'Authorization': authHeader } })
@@ -529,17 +550,19 @@ fastify.get('/sync/host/transactions/sse', { sse: true, preHandler: authenticate
         if (!transposRes.ok) throw new Error(`Failed to fetch transaction positions from remote: ${transposRes.status}`);
         const remoteTrans = await transRes.json();
         const remoteTranspos = await transposRes.json();
-        await reply.sse.send({ event: 'progress', data: { step: 'insert', message: `Inserting ${remoteTrans.length} transactions and ${remoteTranspos.length} positions...`, count: remoteTrans.length + remoteTranspos.length } });
+        await safeSend({ event: 'progress', data: { step: 'insert', message: `Inserting ${remoteTrans.length} transactions and ${remoteTranspos.length} positions...`, count: remoteTrans.length + remoteTranspos.length } });
         insertTransListFromRemote(remoteTrans, cardNumber);
         insertTransPosList(remoteTranspos, cardNumber);
-        await reply.sse.send({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
+        await safeSend({ event: 'progress', data: { step: 'meal_lookup', message: 'Updating meal lookup...' } });
         updateMealLookup();
-        await reply.sse.send({ event: 'done', data: { message: 'Host transactions sync completed', inserted: { transactions: remoteTrans.length, transactionPositions: remoteTranspos.length } } });
+        await safeSend({ event: 'done', data: { message: 'Host transactions sync completed', inserted: { transactions: remoteTrans.length, transactionPositions: remoteTranspos.length } } });
     } catch (err) {
         fastify.log.error(err, 'Error in host transactions SSE sync');
-        await reply.sse.send({ event: 'error', data: { message: /** @type {any} */ (err).message } });
+        await safeSend({ event: 'error', data: { message: /** @type {any} */ (err).message } });
     }
 });
+
+}); // end fastify.register
 
 try {
     await fastify.listen({ port: Number(process.env.PORT) || 3000 });
