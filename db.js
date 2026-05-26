@@ -350,7 +350,7 @@ export function getTransPosList(cardnumber = null) {
 
 /**
  * Returns all mensa locations from the database.
- * @returns {{id: number, openMensaId: number, mensaXMLId: number|null, name: string, internalName: string|null}[]}
+ * @returns {{id: number, openMensaId: number|null, mensaXMLId: number|null, name: string, internalName: string|null}[]}
  */
 export function getMensaLocations() {
     const stmt = db.prepare('SELECT * FROM mensa_locations');
@@ -367,7 +367,7 @@ export function getMensaLocations() {
 /**
  * Looks up a mensa location by its OpenMensa API id.
  * @param {number} openMensaId - The OpenMensa canteen id.
- * @returns {{id: number, openMensaId: number, mensaXMLId: number|null, name: string, internalName: string|null} | null}
+ * @returns {{id: number, openMensaId: number|null, mensaXMLId: number|null, name: string, internalName: string|null} | null}
  */
 export function getMensaLocationByOpenMensaId(openMensaId) {
     const stmt = db.prepare('SELECT * FROM mensa_locations WHERE openMensaId = ?');
@@ -389,7 +389,7 @@ export function getMensaLocationByOpenMensaId(openMensaId) {
 /**
  * Looks up a mensa location by its Mensa XML feed id.
  * @param {number} mensaXMLId - The Mensa XML canteen id.
- * @returns {{id: number, openMensaId: number, mensaXMLId: number|null, name: string, internalName: string|null} | null}
+ * @returns {{id: number, openMensaId: number|null, mensaXMLId: number|null, name: string, internalName: string|null} | null}
  */
 export function getMensaLocationByMensaXMLId(mensaXMLId) {
     const stmt = db.prepare('SELECT * FROM mensa_locations WHERE mensaXMLId = ?');
@@ -468,7 +468,7 @@ export function getOpenMensaDays(canteenId, startDate = null) {
 
 /**
  * Returns all meals from the database joined with their location data (OpenMensa format).
- * @returns {{id: number, name: string, notes: string[]|null, prices: Object|null, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, canteenId: number}[]}
+ * @returns {{id: number, name: string, notes: string[]|null, prices: Object|null, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, canteenId: number}[]}
  */
 export function getAllOpenMensaMeals() {
     const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id');
@@ -492,7 +492,7 @@ export function getAllOpenMensaMeals() {
  * Returns all meals for a specific canteen and date (OpenMensa format).
  * @param {number} canteenId - OpenMensa canteen id.
  * @param {string} date - ISO date string.
- * @returns {{id: number, name: string, notes: string[], prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, canteenId: number}[]}
+ * @returns {{id: number, name: string, notes: string[], prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}, category: string, date: Date, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null , locationMensaXMLId: number|null, canteenId: number}[]}
  */
 export function getOpenMensaMeals(canteenId, date) {
     const dateObj = new Date(date);
@@ -566,7 +566,7 @@ export function getMissingMensaXMLDays(canteenId, startDate = null) {
 
 /**
  * Returns all meals from the database joined with their location data (Mensa XML format).
- * @returns {{id: number, locationId: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]}
+ * @returns {{id: number, locationId: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]}
  */
 export function getAllMensaXMLMeals() {
     const stmt = db.prepare('SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id');
@@ -592,7 +592,7 @@ export function getAllMensaXMLMeals() {
  * Returns meals for a specific Mensa XML canteen and date.
  * @param {number} canteenId - Mensa XML canteen id.
  * @param {string} date - ISO date string.
- * @returns {{id: number, locationId: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]}
+ * @returns {{id: number, locationId: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: Object|null, components: string[]|null, tags: string[]|null}[]}
  */
 export function getMensaXMLMeals(canteenId, date) {
     const dateObj = new Date(date);
@@ -627,7 +627,7 @@ export function getMensaXMLMeals(canteenId, date) {
  * @param {string|null} date 
  * @param {number|null} canteenId 
  * @param {string|null} internalCategory 
- * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
+ * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
  */
 export function getMeals(date = null, canteenId = null, internalCategory = null) {
     var dateObj = date ? new Date(date) : null;
@@ -671,7 +671,7 @@ export function getMeals(date = null, canteenId = null, internalCategory = null)
  * Matches the meals based on the transaction position names for the transactions of the card on that date to the internal category of the meals. This allows to assign meals to transactions based on their name and the date they were consumed.
  * @param {string} cardnumber 
  * @param {Date|null} date 
- * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
+ * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
  */
 export function getCardMeals(cardnumber, date = null) {
     // get transactions for the card and date
@@ -874,6 +874,33 @@ export function insertTransListFromRemote(transList, cardnumber) {
             trans.zahlBetrag,
             trans.dateiablageId ?? null,
             trans.bonusInfo ?? null,
+            cardnumber
+        );
+    }
+}
+
+/**
+ * Inserts transaction positions synced from a remote server, ignoring duplicates.
+ * @param {{mandantId: number, transFullId: string, posId: number, name: string, menge: number, epreis: number, rabatt: number|null, gpreis: number, bewertung: number|null}[]} transPosList
+ * @param {string} cardnumber
+ * @returns {void}
+ */
+export function insertTransPosListFromRemote(transPosList, cardnumber) {
+    const stmt = db.prepare(`
+        INSERT OR IGNORE INTO transpos (mandantId, transFullId, posId, name, menge, epreis, rabatt, gpreis, bewertung, cardnumber)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const transPos of transPosList) {
+        stmt.run(
+            transPos.mandantId,
+            transPos.transFullId,
+            transPos.posId,
+            transPos.name,
+            transPos.menge,
+            transPos.epreis,
+            transPos.rabatt ?? null,
+            transPos.gpreis,
+            transPos.bewertung ?? null,
             cardnumber
         );
     }
