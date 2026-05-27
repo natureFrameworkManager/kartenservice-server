@@ -745,10 +745,16 @@ async function loginFlow() {
         }
     } else if (response.status === 400 && data.error === "cardNumber and password are required") {
         console.log("Ungültige Eingabe, bitte überprüfe deine Anmeldedaten");
-    } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {   
+        document.querySelector("#login-error-con").innerHTML = "<span>Bitte Karten-Nummer und Passwort eingeben.</span>";
+        setTimeout(() => { document.querySelector("#login-error-con").innerHTML = ""; }, 5000);
+    } else if (response.status === 400 && data.error.startsWith("Invalid card credentials")) {
         console.log("Ungültige Kartendaten und konnte nicht mit den Kartenservice validiert werden, bitte überprüfe deine Anmeldedaten");
+        document.querySelector("#login-error-con").innerHTML = "<span>Ungültige Anmeldedaten. Bitte überprüfe Karten-Nummer und Passwort.</span>";
+        setTimeout(() => { document.querySelector("#login-error-con").innerHTML = ""; }, 5000);
     } else {
         console.log("Unbekannter Fehler, bitte versuche es später erneut");
+        document.querySelector("#login-error-con").innerHTML = "<span>Unbekannter Fehler. Bitte versuche es später erneut.</span>";
+        setTimeout(() => { document.querySelector("#login-error-con").innerHTML = ""; }, 5000);
     }
 }
 
@@ -916,6 +922,11 @@ changeView("meals-view");
 
     document.querySelector("#location-view #add-location-btn").addEventListener("click", async () => {
         var name = document.querySelector("#location-view #location-name-input").value.trim();
+        if (!name) {
+            document.querySelector("#location-error-con").innerHTML = "<span>Bitte einen Namen angeben.</span>";
+            setTimeout(() => { document.querySelector("#location-error-con").innerHTML = ""; }, 5000);
+            return;
+        }
         var internalName = document.querySelector("#location-view #location-internal-name-input").value.trim() || null;
         var openMensaIdStr = document.querySelector("#location-view #location-openmensa-id-input").value.trim();
         var mensaXMLIdStr = document.querySelector("#location-view #location-studenwerk-id-input").value.trim();
@@ -936,6 +947,10 @@ changeView("meals-view");
             document.querySelector("#location-view #location-internal-name-input").value = "";
             document.querySelector("#location-view #location-openmensa-id-input").value = "";
             document.querySelector("#location-view #location-studenwerk-id-input").value = "";
+        } else {
+            const msg = await response.json().then(d => d.error || d.message).catch(() => null);
+            document.querySelector("#location-error-con").innerHTML = `<span>Fehler beim Speichern${msg ? ": " + escapeHTML(msg) : " (" + response.status + ")"}</span>`;
+            setTimeout(() => { document.querySelector("#location-error-con").innerHTML = ""; }, 5000);
         }
     });
 
@@ -1053,8 +1068,8 @@ changeView("meals-view");
                 } catch {
                     finish("Serverfehler", true);
                 }
-            } else if (!finished) {
-                finish("Verbindungsfehler", true);
+            } else {
+                finish(finished ? "" : "Verbindung unterbrochen", !finished);
             }
         });
     }
