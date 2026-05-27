@@ -15,12 +15,11 @@ const openMensaApiUrl = process.env.OPENMENSA_API_URL;
 const mensaXmlUrl = process.env.MENSA_XML_URL;
 
 /**
- * 
- * @param {*} cardnumber 
- * @param {*} password 
- * @returns 
+ * @param {string} cardnumber
+ * @param {string} password
+ * @returns {Promise<{authToken: string, days: number}>}
  */
-export async function getAuthToken(cardnumber, password) {
+async function fetchLoginData(cardnumber, password) {
     const response = await fetch(`${baseUrl}LOGIN?karteNr=${cardnumber}&datenformat=JSON`, {
         method: 'POST',
         headers: {
@@ -31,63 +30,35 @@ export async function getAuthToken(cardnumber, password) {
         body: JSON.stringify({ "BenutzerID": cardnumber, "Passwort": password })
     });
     if (!response.ok) {
-        if (response.status === 401) {
-            // Basic auth failed
-            throw new Error(await response.text());
-        } else if (response.status === 599) {
-            // Error from the server, possibly due to invalid credentials
-            throw new Error(await response.text());
-        } else if (response.status === 403) {
-            // Card internet access is not active
+        if (response.status === 403) {
             throw new Error("Card internet access is not active.");
         } else if (response.status === 408) {
-            // Request timeout
             throw new Error("Request timed out. Please try again later.");
         } else {
-            // Other errors
-            throw new Error(`Unexpected error: ${response.status} - ${await response.text()}`);
-        }
-    }
-    const data = await response.json();
-    return data[0].authToken;
-}
-
-/**
- * 
- * @param {*} cardnumber 
- * @param {*} password 
- * @returns 
- */
-export async function getAuthTokenWithDays(cardnumber, password) {
-    const response = await fetch(`${baseUrl}LOGIN?karteNr=${cardnumber}&datenformat=JSON`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Basic ${basicAuth}`,
-            'accept': 'application/json',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ "BenutzerID": cardnumber, "Passwort": password })
-    });
-    if (!response.ok) {
-        if (response.status === 401) {
-            // Basic auth failed
             throw new Error(await response.text());
-        } else if (response.status === 599) {
-            // Error from the server, possibly due to invalid credentials
-            throw new Error(await response.text());
-        } else if (response.status === 403) {
-            // Card internet access is not active
-            throw new Error("Card internet access is not active.");
-        } else if (response.status === 408) {
-            // Request timeout
-            throw new Error("Request timed out. Please try again later.");
-        } else {
-            // Other errors
-            throw new Error(`Unexpected error: ${response.status} - ${await response.text()}`);
         }
     }
     const data = await response.json();
     return { authToken: data[0].authToken, days: data[0].lTransTage };
+}
+
+/**
+ * @param {string} cardnumber
+ * @param {string} password
+ * @returns {Promise<string>}
+ */
+export async function getAuthToken(cardnumber, password) {
+    const { authToken } = await fetchLoginData(cardnumber, password);
+    return authToken;
+}
+
+/**
+ * @param {string} cardnumber
+ * @param {string} password
+ * @returns {Promise<{authToken: string, days: number}>}
+ */
+export async function getAuthTokenWithDays(cardnumber, password) {
+    return fetchLoginData(cardnumber, password);
 }
 
 /**
