@@ -246,8 +246,8 @@ export async function getOpenMensaCanteenDays(canteenId, startDate) {
     // check for pagination
     const totalPages = parseInt(response.headers.get('X-Total-Pages') || '1');
     /** @type {{date: string, closed: boolean}[]} */
-    let allData = [];
-    for (let page = 1; page <= totalPages; page++) {
+    let allData = await response.json();
+    for (let page = 2; page <= totalPages; page++) {
         const pageResponse = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days?start=${dateStartStr}&page=${page}`, {
             method: 'GET',
             headers: {
@@ -294,8 +294,8 @@ export async function getOpenMensaMeals(canteenId, date) {
     // check for pagination
     const totalPages = parseInt(response.headers.get('X-Total-Pages') || '1');
     /** @type {Meal[]} */
-    let allData = [];
-    for (let page = 1; page <= totalPages; page++) {
+    let allData = await response.json();
+    for (let page = 2; page <= totalPages; page++) {
         const pageResponse = await fetch(`${openMensaApiUrl}/canteens/${canteenId}/days/${date}/meals?page=${page}`, {
             method: 'GET',
             headers: {

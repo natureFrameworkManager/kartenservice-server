@@ -34,7 +34,6 @@
 - **UTC vs. local time mismatch breaks card meal lookup** (`db.js`): Meals are stored with UTC-midnight timestamps (`new Date("yyyy-MM-dd").getTime()`), but `getCardMeals` computes day boundaries using `setHours(0,0,0,0)` / `setHours(23,59,59,999)` (local time). In any timezone east of UTC, the UTC meal timestamp falls outside the local end-of-day boundary, so meals are never matched to transactions
 - **`insertTransList` stores dates in local time while meals use UTC** (`db.js`): Transaction dates are parsed with `new Date(year, month-1, day, hour, minute)` (local time), creating a systematic offset against UTC-stored meal dates that worsens the card meal lookup mismatch
 - **`insertMensaXMLMeals` throws on unknown location, aborting the entire batch** (`db.js`): If a meal's `locationId` has no match in `mensa_locations`, `getMensaLocationByMensaXMLId` throws, stopping all subsequent insertions in that loop; the error should be logged and the entry skipped
-- **`getOpenMensaCanteenDays` and `getOpenMensaMeals` double-fetch page 1** (`api.js`): Both functions make an initial request to read the `X-Total-Pages` header and then loop from `page=1`, re-issuing the first request a second time and discarding the initial response body
 
 #### Missing / Incomplete
 - **`getAuthToken` and `getAuthTokenWithDays` are exact duplicates** (`api.js`): Both functions make the same request with the same error handling; only the return value differs; the shared fetch logic is never reused
