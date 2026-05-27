@@ -6,7 +6,6 @@
 - Improve file structure
 
 ### UI Bugs & Missing Implementations
-- **`host` variable inconsistent with input default** (`js.js` / `index.html`): JS initializes `host = "localhost:3001"` but the input field has `value="localhost"` (no port), so the UI shows a different host than the one actually used until the user changes the field
 - **No event handler for location "Bearbeiten" buttons** (`js.js`): `displayLocationTable` renders edit buttons with a `data-id` attribute but no click listener is attached anywhere, so the buttons do nothing
 - **Login errors not shown to the user** (`js.js`): `loginFlow()` only `console.log`s validation and credential errors; no message is displayed in the UI when login fails
 - **`runSyncSSE` button stays permanently disabled if stream ends without a `done` event** (`js.js`): The read loop exits when the stream closes (`done = true`) but only re-enables the button if a `done` SSE event was received; an abruptly closed stream leaves the button stuck

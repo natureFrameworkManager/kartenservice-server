@@ -58,6 +58,19 @@ async function detectProto(hostName) {
 }
 
 /**
+ * Derives the API host (hostname:port + base path, no trailing slash) from the
+ * current page URL by stripping a trailing /ui/ segment.
+ * Examples:
+ *   https://api.casparkroll.de/kartenservice/v1/ui/ -> "api.casparkroll.de/kartenservice/v1"
+ *   http://localhost:3000/ui/                       -> "localhost:3000"
+ * @returns {string}
+ */
+function getAutoHost() {
+    const basePath = window.location.pathname.replace(/\/ui\/?$/, "").replace(/\/$/, "");
+    return window.location.host + basePath;
+}
+
+/**
  * 
  * @returns {Promise<{id: number, name: string, internalName: string, mensaXMLId: number, openMensaId: number}[]>}
  */
@@ -771,7 +784,8 @@ changeView("meals-view");
         document.querySelector("#user-con").style.display = "";
     }
 
-    host = window.location.host;
+    host = getAutoHost();
+    document.querySelector("#host-input").value = host;
     console.log("Aktueller Host:", host);
     try {
         proto = await detectProto(host);
@@ -808,7 +822,7 @@ changeView("meals-view");
             await transactionDiplayFlow();
         } catch (error) {
             displayUnreachableHost();
-            if (event.target.value === window.location.host) {
+            if (event.target.value === getAutoHost()) {
                 document.querySelector("#host-error-con").innerHTML = "<span>Fehler beim Verbinden mit dem Server.<br>Bitte stelle sicher, dass der Server läuft und die Host-URL korrekt ist.</span>";
             } else {
                 document.querySelector("#host-error-con").innerHTML = "<span>Fehler beim Verbinden mit dem Server.<br>Bitte überprüfe die Host-URL und ob der Server CORS-Anfragen erlaubt.</span>";
@@ -819,8 +833,8 @@ changeView("meals-view");
         }
     });
     document.querySelector("#host-con span").addEventListener("click", async () => {
-        document.querySelector("#host-input").value = window.location.host;
-        host = window.location.host;
+        host = getAutoHost();
+        document.querySelector("#host-input").value = host;
         proto = await detectProto(host);
         try {
             await mealsLocationsFlow();
