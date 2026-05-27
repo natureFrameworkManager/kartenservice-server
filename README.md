@@ -6,8 +6,6 @@
 - Improve file structure
 
 ### UI Bugs & Missing Implementations
-- **Hardcoded date in `mealsLocationsFlow`** (`js.js`): `getMeals` is called with a hardcoded past date (`new Date("2026-05-13")`) instead of `new Date()` or the value from the date input field
-- **Dead `case "array"` branch in `getMealDetailsHTML`** (`js.js`): `typeof []` returns `"object"`, never `"array"`, so the array tag-rendering branch is unreachable dead code; `Array.isArray()` should be used instead
 - **`host` variable inconsistent with input default** (`js.js` / `index.html`): JS initializes `host = "localhost:3001"` but the input field has `value="localhost"` (no port), so the UI shows a different host than the one actually used until the user changes the field
 - **`#user-con span` never updated after login** (`js.js`): The span inside `#user-con` always shows the hardcoded placeholder card number from the HTML; `loginFlow()` never sets it to the actual logged-in card number
 - **No event handler for location "Bearbeiten" buttons** (`js.js`): `displayLocationTable` renders edit buttons with a `data-id` attribute but no click listener is attached anywhere, so the buttons do nothing

@@ -396,24 +396,22 @@ function getMealDetailsHTML(meal) {
             <div class="meal-tags">
                 <span>Tags:</span>
                 ${meal.tags.map(tag => {
+                    if (Array.isArray(tag)) {
+                        return `
+                                <div class="meal-tag-con">
+                                    <span>${tag[0]}:</span>
+                                    <span>${tag[1]}</span>
+                                </div>`;
+                    }
                     switch (typeof tag) {
                         case "string":
                             return `<span>${tag}</span>`;
-                            break;
                         case "object":
                             return `
                                 <div class="meal-tag-con">
                                     <span>${tag.type}:</span>
                                     <span>${tag.name}</span>
                                 </div>`;
-                            break;
-                        case "array":
-                            return `
-                                <div class="meal-tag-con">
-                                    <span>${tag[0]}:</span>
-                                    <span>${tag[1]}</span>
-                                </div>`;
-                            break;
                         default:
                             return `<span>${tag}</span>`;
                     }
@@ -639,7 +637,7 @@ async function mealsLocationsFlow() {
     displayLocationTable(locations);
     console.log(locations);
 
-    let meals = await getMeals(null,new Date("2026-05-13"));
+    let meals = await getMeals(null, new Date());
     meals = groupMealsByLocation(meals);
     displayMeals(meals);
     console.log(meals);
