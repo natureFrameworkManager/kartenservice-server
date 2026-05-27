@@ -63,6 +63,7 @@ async function detectProto(hostName) {
  */
 async function getLocations() {
     var response = await fetch(`${proto}://${host}/locations`);
+    if (!response.ok) throw new Error(`getLocations failed: ${response.status}`);
     var data = await response.json();
     return data;
 }
@@ -133,6 +134,7 @@ async function getCardMeals(cardnumber, password, date = null) {
     if (response.status == 404) {
         return [];
     }
+    if (!response.ok) throw new Error(`getCardMeals failed: ${response.status}`);
     var data = await response.json();
     return data.map(meal => {
         meal.date = new Date(meal.date);
@@ -180,6 +182,7 @@ async function getTransactions(cardnumber, password) {
             "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
         }
     });
+    if (!response.ok) throw new Error(`getTransactions failed: ${response.status}`);
     var data = await response.json();
     return data.map(transaction => {
         transaction.datum = new Date(transaction.datum);
@@ -213,6 +216,7 @@ async function getTransactionPositions(cardnumber, password) {
             "Authorization": `Basic ${btoa(cardnumber + ":" + password)}`
         }
     });
+    if (!response.ok) throw new Error(`getTransactionPositions failed: ${response.status}`);
     var data = await response.json();
     return data;
 }
@@ -626,22 +630,20 @@ function displayUnauthenticatedTransactions() {
         </div>
     `;
 }
-function transactionDiplayFlow() {
+async function transactionDiplayFlow() {
     if (cardnumber && password) {
-        (async () => {
-            let transactions = await getTransactions(cardnumber, password);
-            console.log(transactions);
-            let transactionPositions = await getTransactionPositions(cardnumber, password);
-            console.log(transactionPositions);
-            let combinedTransactions = combineTransactionsWithPositions(transactions, transactionPositions);
-            console.log(combinedTransactions);
-            let cardMeals = await getCardMeals(cardnumber, password);
-            let combinedTransactionsWithMeals = await addMealsToCombinedTransactions(combinedTransactions, cardMeals);
-            console.log(combinedTransactionsWithMeals);
-            console.log(combinedTransactionsWithMeals.filter(t => t.positions.some(p => p.meals === undefined)))
-            allTransactions = groupTransactionsByDay(combinedTransactionsWithMeals);
-            displayTransactions(allTransactions);
-        })();
+        let transactions = await getTransactions(cardnumber, password);
+        console.log(transactions);
+        let transactionPositions = await getTransactionPositions(cardnumber, password);
+        console.log(transactionPositions);
+        let combinedTransactions = combineTransactionsWithPositions(transactions, transactionPositions);
+        console.log(combinedTransactions);
+        let cardMeals = await getCardMeals(cardnumber, password);
+        let combinedTransactionsWithMeals = await addMealsToCombinedTransactions(combinedTransactions, cardMeals);
+        console.log(combinedTransactionsWithMeals);
+        console.log(combinedTransactionsWithMeals.filter(t => t.positions.some(p => p.meals === undefined)))
+        allTransactions = groupTransactionsByDay(combinedTransactionsWithMeals);
+        displayTransactions(allTransactions);
     } else {
         displayUnauthenticatedTransactions();
     }
