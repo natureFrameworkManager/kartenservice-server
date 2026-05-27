@@ -533,7 +533,10 @@ export function insertMensaXMLMeals(meals) {
     `);
     for (const meal of meals) {
         const loc = getMensaLocationByMensaXMLId(Number(meal.locationId));
-        if (!loc) throw new Error(`Mensa location not found for XML id: ${meal.locationId}`);
+        if (!loc) {
+            console.warn(`Mensa location not found for XML id: ${meal.locationId}, skipping meal: ${meal.name} on ${meal.date.toISOString().split('T')[0]}`);
+            continue; // skip meals with unknown location
+        }
         var mensaLocationId = loc.id;
         stmt.run(
             mensaLocationId,
