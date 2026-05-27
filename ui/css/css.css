@@ -411,6 +411,19 @@ aside div#host-error-con span {
     background-color: var(--color-red-500);
   }
 }
+aside form#login-con div#login-error-con span {
+  display: block;
+  border-radius: var(--radius);
+  background-color: var(--color-red-600);
+  padding-inline: calc(var(--spacing) * 3);
+  padding-block: calc(var(--spacing) * 2);
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  color: var(--color-white);
+  &:where(.dark, .dark *) {
+    background-color: var(--color-red-500);
+  }
+}
 aside nav {
   margin-top: calc(var(--spacing) * 1);
   display: flex;
@@ -653,16 +666,36 @@ div h2 {
   gap: calc(var(--spacing) * 1);
 }
 #location-view div#location-add-con {
-  display: flex;
+  display: grid;
   width: 100%;
+  grid-template-columns: repeat(auto-fit,minmax(150px,auto));
   align-items: flex-end;
   gap: calc(var(--spacing) * 2);
+  grid-template-rows: auto auto;
 }
 #location-view div#location-add-con .input-con {
   width: 100%;
 }
 #location-view div#location-add-con button {
+  width: max-content;
   text-wrap: nowrap;
+}
+#location-view div#location-error-con {
+  grid-column: 1 / -1;
+  grid-row-start: 2;
+}
+#location-view div#location-error-con span {
+  display: block;
+  border-radius: var(--radius);
+  background-color: var(--color-red-600);
+  padding-inline: calc(var(--spacing) * 3);
+  padding-block: calc(var(--spacing) * 2);
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  color: var(--color-white);
+  &:where(.dark, .dark *) {
+    background-color: var(--color-red-500);
+  }
 }
 #location-view div#location-list {
   margin-top: calc(var(--spacing) * 6);

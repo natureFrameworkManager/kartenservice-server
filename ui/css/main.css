@@ -113,6 +113,10 @@ aside div#host-error-con span {
     @apply text-sm bg-red-600 dark:bg-red-500 text-white px-3 py-2 block rounded mx-2;
 }
 
+aside form#login-con div#login-error-con span {
+    @apply text-sm bg-red-600 dark:bg-red-500 text-white px-3 py-2 block rounded;
+}
+
 aside nav {
     @apply mt-1 flex flex-col gap-1 p-3;
 }
@@ -225,13 +229,20 @@ div h2 {
 }
 
 #location-view div#location-add-con {
-    @apply flex items-end gap-2 w-full;
+    @apply grid grid-cols-[repeat(auto-fit,minmax(150px,auto))] gap-2 items-end w-full;
+    grid-template-rows: auto auto;
 }
 #location-view div#location-add-con .input-con {
     @apply w-full;
 }
 #location-view div#location-add-con button {
-    @apply text-nowrap;
+    @apply text-nowrap w-max;
+}
+#location-view div#location-error-con {
+    @apply col-span-full row-start-2;
+}
+#location-view div#location-error-con span {
+    @apply text-sm bg-red-600 dark:bg-red-500 text-white px-3 py-2 block rounded;
 }
 #location-view div#location-list {
     @apply mt-6 w-full border border-border rounded overflow-x-auto;
