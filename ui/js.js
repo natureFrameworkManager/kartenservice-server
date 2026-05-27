@@ -692,6 +692,7 @@ async function loginFlow() {
         document.querySelector("#login-con").style.display = "none";
         document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
+        document.querySelector("#user-con span").textContent = cardId;
         try {
             await transactionDiplayFlow();
         } catch (error) {
@@ -706,6 +707,7 @@ async function loginFlow() {
         document.querySelector("#login-con").style.display = "none";
         document.querySelector("#action-con").style.display = "none";
         document.querySelector("#user-con").style.display = "";
+        document.querySelector("#user-con span").textContent = cardId;
         try {
             await transactionDiplayFlow();
         } catch (error) {
@@ -764,7 +766,7 @@ changeView("meals-view");
 
     document.querySelector("#meals-view select#location-input").addEventListener("change", async (event) => {
         var dateValue = document.querySelector("#meals-view input#date-input").value;
-        const date = dateValue == "" ? new Date() : new Date(dateValue);
+        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00");
         const locationId = event.target.value;
         let meals = await getMeals(locationId === "" ? null : locationId, date);
         meals = groupMealsByLocation(meals);
@@ -773,7 +775,7 @@ changeView("meals-view");
     });
     document.querySelector("#meals-view input#date-input").addEventListener("change", async (event) => {
         var dateValue = event.target.value;
-        const date = dateValue == "" ? new Date() : new Date(dateValue);
+        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00");
         const locationId = document.querySelector("#meals-view select#location-input").value;
         let meals = await getMeals(locationId === "" ? null : locationId, date);
         meals = groupMealsByLocation(meals);
@@ -811,13 +813,6 @@ changeView("meals-view");
         }
     });
 
-    document.querySelector("#login-con button").addEventListener("click", async () => {
-        try {
-            await loginFlow();
-        } catch (error) {
-            displayUnreachableHost();
-        }
-    });
     document.querySelector("form#login-con").addEventListener("submit", async (event) => {
         event.preventDefault();
         try {
