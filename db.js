@@ -235,7 +235,7 @@ export function insertTransList(transList, cardnumber) {
     for (const trans of transList) {
         var dateParts = trans.datum.split(' ')[0].split('.');
         var timeParts = trans.datum.split(' ')[1].split(':');
-        var date = new Date(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]), Number(timeParts[0]), Number(timeParts[1]));
+        var date = new Date(Date.UTC(Number(dateParts[2]), Number(dateParts[1]) - 1, Number(dateParts[0]), Number(timeParts[0]), Number(timeParts[1])));
         stmt.run(
             trans.mandantId,
             trans.transFullId,
@@ -682,10 +682,8 @@ export function getCardMeals(cardnumber, date = null) {
     /** @type {any[]} */
     var params = [cardnumber];
     if (date) {
-        var startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        var endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
+        var startOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 0, 0, 0, 0));
+        var endOfDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 23, 59, 59, 999));
         sql += " AND datum >= ? AND datum <= ?";
         params.push(startOfDay.getTime(), endOfDay.getTime());
     }
@@ -701,10 +699,8 @@ export function getCardMeals(cardnumber, date = null) {
     var meals = [];
     const mealStmt = db.prepare('SELECT DISTINCT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE meals.mensa_location_id = ? AND meals.date >= ? AND meals.date <= ? AND (meals.internalCategory = ? OR meals.category = ? OR meals.name = ?)');
     for (const trans of transactions) {
-        var startOfDay = new Date(trans.datum);
-        startOfDay.setHours(0, 0, 0, 0);
-        var endOfDay = new Date(trans.datum);
-        endOfDay.setHours(23, 59, 59, 999);
+        var startOfDay = new Date(Date.UTC(trans.datum.getUTCFullYear(), trans.datum.getUTCMonth(), trans.datum.getUTCDate(), 0, 0, 0, 0));
+        var endOfDay = new Date(Date.UTC(trans.datum.getUTCFullYear(), trans.datum.getUTCMonth(), trans.datum.getUTCDate(), 23, 59, 59, 999));
         const mealResults = mealStmt.all(trans.mensaLocationId, startOfDay.getTime(), endOfDay.getTime(), trans.internalName, trans.internalName, trans.internalName);
         meals.push(...mealResults.map(/** @param {any} r */ r => ({
             id: r.id,
