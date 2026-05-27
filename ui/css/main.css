@@ -260,6 +260,15 @@ div h2 {
 #location-view div#location-list button {
     @apply text-primary bg-transparent hover:text-text-primary hover:bg-primary px-2 py-1;
 }
+#location-view div#location-list td:last-child {
+    @apply flex items-center gap-1;
+}
+#location-view div#location-list td input {
+    @apply bg-surface border border-border rounded px-2 py-0.5 text-sm w-full min-w-0;
+}
+#location-view div#location-list .cancel-location-btn {
+    @apply text-text-background hover:text-text-primary;
+}
 
 #transaction-view div#transaction-query {
     @apply flex gap-2 items-end w-full;

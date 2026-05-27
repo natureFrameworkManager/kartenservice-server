@@ -6,7 +6,6 @@
 - Improve file structure
 
 ### UI Bugs & Missing Implementations
-- **No event handler for location "Bearbeiten" buttons** (`js.js`): `displayLocationTable` renders edit buttons with a `data-id` attribute but no click listener is attached anywhere, so the buttons do nothing
 
 ### Backend Bugs & Missing Implementations
 

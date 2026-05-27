@@ -82,6 +82,22 @@ async function getLocations() {
 }
 
 /**
+ * @param {number} id
+ * @param {string} name
+ * @param {string|null} internalName
+ * @param {number|null} openMensaId
+ * @param {number|null} mensaXMLId
+ * @returns {Promise<Response>}
+ */
+async function updateLocation(id, name, internalName, openMensaId, mensaXMLId) {
+    return fetch(`${proto}://${host}/locations/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, internalName, openMensaId, mensaXMLId })
+    });
+}
+
+/**
  * @typedef {Object} Meal
  * @property {number} id
  * @property {Date} date
@@ -345,12 +361,13 @@ function displayLocationTable(locations) {
     locationTableBody.innerHTML = "";
     locations.forEach(location => {
         const row = document.createElement("tr");
+        row.dataset.locationId = location.id;
         row.innerHTML = `
             <td>${escapeHTML(location.name)}</td>
             <td>${location.internalName === null ? "-" : escapeHTML(location.internalName)}</td>
             <td>${location.openMensaId === null ? "-" : location.openMensaId}</td>
             <td>${location.mensaXMLId === null ? "-" : location.mensaXMLId}</td>
-            <td><button data-id="${location.id}">Bearbeiten</button></td>
+            <td><button class="edit-location-btn" data-id="${location.id}">Bearbeiten</button></td>
         `;
         locationTableBody.appendChild(row);
     });
@@ -917,6 +934,46 @@ changeView("meals-view");
             await updateMealInternalCategory(Number(mealId), input.value);
             input.dataset.originalValue = input.value;
             btn.style.display = "none";
+        }
+    });
+
+    document.querySelector("#location-view div#location-list").addEventListener("click", async (event) => {
+        const btn = event.target.closest("button");
+        if (!btn) return;
+        const row = btn.closest("tr");
+        if (!row) return;
+
+        if (btn.classList.contains("edit-location-btn")) {
+            const loc = locations.find(l => l.id == btn.dataset.id);
+            if (!loc) return;
+            row.cells[0].innerHTML = `<input type="text" value="${escapeHTML(loc.name)}"`  + `>`;
+            row.cells[1].innerHTML = `<input type="text" value="${escapeHTML(loc.internalName ?? "")}">`;
+            row.cells[2].innerHTML = `<input type="number" value="${loc.openMensaId ?? ""}">`;
+            row.cells[3].innerHTML = `<input type="number" value="${loc.mensaXMLId ?? ""}">`;
+            row.cells[4].innerHTML = `<button class="save-location-btn" data-id="${loc.id}">Speichern</button><button class="cancel-location-btn">Abbrechen</button>`;
+
+        } else if (btn.classList.contains("cancel-location-btn")) {
+            displayLocationTable(locations);
+
+        } else if (btn.classList.contains("save-location-btn")) {
+            const locationId = Number(btn.dataset.id);
+            const name = row.cells[0].querySelector("input").value.trim();
+            const internalNameVal = row.cells[1].querySelector("input").value.trim();
+            const openMensaIdVal = row.cells[2].querySelector("input").value.trim();
+            const mensaXMLIdVal = row.cells[3].querySelector("input").value.trim();
+            const internalName = internalNameVal || null;
+            const openMensaId = openMensaIdVal ? Number(openMensaIdVal) : null;
+            const mensaXMLId = mensaXMLIdVal ? Number(mensaXMLIdVal) : null;
+            const response = await updateLocation(locationId, name, internalName, openMensaId, mensaXMLId);
+            if (response.ok) {
+                locations = await getLocations();
+                displayLocationTable(locations);
+                displayLocationSelector(locations);
+            } else {
+                const msg = await response.json().then(d => d.error || d.message).catch(() => null);
+                document.querySelector("#location-error-con").innerHTML = `<span>Fehler beim Speichern${msg ? ": " + escapeHTML(msg) : " (" + response.status + ")"}</span>`;
+                setTimeout(() => { document.querySelector("#location-error-con").innerHTML = ""; }, 5000);
+            }
         }
     });
 

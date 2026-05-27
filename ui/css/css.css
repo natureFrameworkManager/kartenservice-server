@@ -45,7 +45,6 @@
     --radius-xs: 3px;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
-    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
     --blur-sm: 8px;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -734,6 +733,32 @@ div h2 {
       background-color: var(--color-primary);
     }
   }
+  &:hover {
+    @media (hover: hover) {
+      color: var(--color-text-primary);
+    }
+  }
+}
+#location-view div#location-list td:last-child {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 1);
+}
+#location-view div#location-list td input {
+  width: 100%;
+  min-width: calc(var(--spacing) * 0);
+  border-radius: var(--radius);
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+  border-color: var(--color-border);
+  background-color: var(--color-surface);
+  padding-inline: calc(var(--spacing) * 2);
+  padding-block: calc(var(--spacing) * 0.5);
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+}
+#location-view div#location-list .cancel-location-btn {
+  color: var(--color-text-background);
   &:hover {
     @media (hover: hover) {
       color: var(--color-text-primary);
