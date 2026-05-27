@@ -1,5 +1,6 @@
 // @ts-check
 
+import { timingSafeEqual } from 'crypto';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifySSE from '@fastify/sse';
@@ -70,7 +71,11 @@ async function authenticate(request, reply) {
     const cardnumber = decoded.slice(0, colonIndex);
     const password = decoded.slice(colonIndex + 1);
     const card = await getCard(cardnumber);
-    if (!card || card.password !== password) {
+    const passwordsMatch = card && timingSafeEqual(
+        Buffer.from(card.password),
+        Buffer.from(password)
+    );
+    if (!card || !passwordsMatch) {
         reply.code(401).send({ error: 'Invalid credentials' });
         return;
     }

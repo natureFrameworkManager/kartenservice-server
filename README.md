@@ -27,8 +27,6 @@
 #### Security
 - **`PATCH /meals/:id`, `POST /locations`, `PUT /locations/:id` have no authentication** (`server.js`): These endpoints modify server data but have no `preHandler: authenticate`, so any unauthenticated user can overwrite meal categories and add/edit canteen locations
 - **`POST /fetch/open-mensa` and `POST /fetch/mensa-xml` have no authentication** (`server.js`): Any anonymous caller can trigger remote fetches, causing unnecessary upstream API calls and potentially hitting rate limits
-- **Non-timing-safe password comparison in `authenticate`** (`server.js`): `card.password !== password` uses a simple string equality check, which is vulnerable to timing attacks; `crypto.timingSafeEqual` should be used instead
-- **`basicAuth` constructed at module load with potentially `undefined` values** (`api.js`): `Buffer.from(\`${process.env.BASIC_AUTH_USERNAME}:${process.env.BASIC_AUTH_PASSWORD}\`)` silently produces `"undefined:undefined"` if the env vars are missing; no startup validation
 
 #### Missing / Incomplete
 - **`getAuthToken` and `getAuthTokenWithDays` are exact duplicates** (`api.js`): Both functions make the same request with the same error handling; only the return value differs; the shared fetch logic is never reused

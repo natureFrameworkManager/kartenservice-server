@@ -6,6 +6,9 @@ import { getOpenMensaDays, insertOpenMensaMeals, getOpenMensaMeals as getDBOpenM
 dotenv.config({ quiet: true });
 
 const baseUrl = process.env.BASE_URL;
+if (!process.env.BASIC_AUTH_USERNAME || !process.env.BASIC_AUTH_PASSWORD) {
+    throw new Error('BASIC_AUTH_USERNAME and BASIC_AUTH_PASSWORD environment variables must be set.');
+}
 const basicAuth = Buffer.from(`${process.env.BASIC_AUTH_USERNAME}:${process.env.BASIC_AUTH_PASSWORD}`).toString('base64');
 
 const openMensaApiUrl = process.env.OPENMENSA_API_URL;
