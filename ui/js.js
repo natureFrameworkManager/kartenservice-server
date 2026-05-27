@@ -20,6 +20,20 @@ const currencyFormatter = new Intl.NumberFormat("de-DE", {
 });
 
 /**
+ * Escapes a string for safe insertion into HTML.
+ * @param {*} str
+ * @returns {string}
+ */
+function escapeHTML(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+/**
  * Detects whether the host supports HTTPS or redirects from HTTP to HTTPS.
  * Tries HTTPS first; if that fails, tries HTTP and follows any redirect to check
  * whether the server ultimately serves over HTTPS.
@@ -262,7 +276,8 @@ async function addMealsToCombinedTransactions(transactionsWithPositions, meals) 
 function groupTransactionsByDay(transactions) {
     const transactionsByDay = {};
     transactions.forEach(transaction => {
-        const dateKey = transaction.datum.toISOString().split("T")[0];
+        const d = transaction.datum;
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         if (!transactionsByDay[dateKey]) {
             transactionsByDay[dateKey] = [];
         }
@@ -314,8 +329,8 @@ function displayLocationTable(locations) {
     locations.forEach(location => {
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td>${location.name}</td>
-            <td>${location.internalName === null ? "-" : location.internalName}</td>
+            <td>${escapeHTML(location.name)}</td>
+            <td>${location.internalName === null ? "-" : escapeHTML(location.internalName)}</td>
             <td>${location.openMensaId === null ? "-" : location.openMensaId}</td>
             <td>${location.mensaXMLId === null ? "-" : location.mensaXMLId}</td>
             <td><button data-id="${location.id}">Bearbeiten</button></td>
@@ -336,7 +351,7 @@ function displayMeals(mealsByLocation) {
         const locationDiv = document.createElement("div");
         locationDiv.classList.add("location-con");
         locationDiv.innerHTML = `
-            <h3>${location.locationName}</h3>
+            <h3>${escapeHTML(location.locationName)}</h3>
             <div class="meals-list">
                 ${getLocationMealHTML(location.meals)}
             </div>
@@ -354,17 +369,17 @@ function getLocationMealHTML(meals) {
     return meals.map(meal => {
         return `
             <div class="meal-con" data-meal-id="${meal.id}">
-                <span class="meal-name">${meal.name}</span>
+                <span class="meal-name">${escapeHTML(meal.name)}</span>
                 <div class="meal-components-con">
-                    ${meal.components.map(component => `<span>${component}</span>`).join("")}
+                    ${meal.components.map(component => `<span>${escapeHTML(component)}</span>`).join("")}
                 </div>
                 <div class="meal-input">
                     <label for="">Int. Kateg.</label>
-                    <input type="text" placeholder="-" value="${meal.internalCategory ? meal.internalCategory : ""}" data-original-value="${meal.internalCategory ? meal.internalCategory : ""}">
+                    <input type="text" placeholder="-" value="${meal.internalCategory ? escapeHTML(meal.internalCategory) : ""}" data-original-value="${meal.internalCategory ? escapeHTML(meal.internalCategory) : ""}">
                     <button class="save-internal-category-btn" style="display: none;">Speichern</button>
                 </div>
                 <div class="meal-bottom">
-                    <span class="meal-category">${meal.category}</span>
+                    <span class="meal-category">${escapeHTML(meal.category)}</span>
                     <span class="meal-price">${currencyFormatter.format(meal.prices.students)}</span>
                 </div>
                 <details class="meal-detail-con">
@@ -388,7 +403,7 @@ function getMealDetailsHTML(meal) {
             <div class="meal-notes">
                 <h4>Notizen</h4>
                 <ul>
-                    ${meal.notes.map(note => `<li>${note}</li>`).join("")}
+                    ${meal.notes.map(note => `<li>${escapeHTML(note)}</li>`).join("")}
                 </ul>
             </div>
         ` : "<div class='meal-notes'></div>";
@@ -399,21 +414,21 @@ function getMealDetailsHTML(meal) {
                     if (Array.isArray(tag)) {
                         return `
                                 <div class="meal-tag-con">
-                                    <span>${tag[0]}:</span>
-                                    <span>${tag[1]}</span>
+                                    <span>${escapeHTML(tag[0])}:</span>
+                                    <span>${escapeHTML(tag[1])}</span>
                                 </div>`;
                     }
                     switch (typeof tag) {
                         case "string":
-                            return `<span>${tag}</span>`;
+                            return `<span>${escapeHTML(tag)}</span>`;
                         case "object":
                             return `
                                 <div class="meal-tag-con">
-                                    <span>${tag.type}:</span>
-                                    <span>${tag.name}</span>
+                                    <span>${escapeHTML(tag.type)}:</span>
+                                    <span>${escapeHTML(tag.name)}</span>
                                 </div>`;
                         default:
-                            return `<span>${tag}</span>`;
+                            return `<span>${escapeHTML(tag)}</span>`;
                     }
                 }).join("")}
             </div>
@@ -470,12 +485,12 @@ function getTransactionHTML(transaction) {
                     <div class="info-con">
                         <div class="horizontal-con">
                             <span>${transaction.datum.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span class="type-span">${transaction.typName}</span>
+                            <span class="type-span">${escapeHTML(transaction.typName)}</span>
                         </div>
                         <div class="location-con">
-                            <span>${locations.find(location => location.internalName === transaction.ortName)?.name || "Unbekannt"}</span>
+                            <span>${escapeHTML(locations.find(location => location.internalName === transaction.ortName)?.name || "Unbekannt")}</span>
                             <span>&middot;</span>
-                            <span>${transaction.kaName}</span>
+                            <span>${escapeHTML(transaction.kaName)}</span>
                         </div>
                     </div>
                     <div></div>
@@ -491,20 +506,20 @@ function getTransactionHTML(transaction) {
             var html = `
                 <div class="transaction-position-meal-reference">
                     <span>[${transaction.positions[0].meal.id}]</span>
-                    <span>${transaction.positions[0].meal.name}</span>
-                    <span>${transaction.positions[0].meal.category}</span>
+                    <span>${escapeHTML(transaction.positions[0].meal.name)}</span>
+                    <span>${escapeHTML(transaction.positions[0].meal.category)}</span>
                 </div>
             `;
         } else if (transaction.positions[0].meal === null && transaction.positions[0].name.includes("Essen")) {
             var filteredMeals = transaction.positions[0].meals.filter(meal => Math.abs(meal.prices.students - transaction.positions[0].epreis) < 0.005);
             var optionHtml = filteredMeals.map(meal => {
                 return `
-                    <option value="${meal.id}">${meal.name} (${meal.internalCategory || '-'} | ${currencyFormatter.format(meal.prices.students)} | ${meal.category})</option>
+                    <option value="${meal.id}">${escapeHTML(meal.name)} (${escapeHTML(meal.internalCategory || '-')} | ${currencyFormatter.format(meal.prices.students)} | ${escapeHTML(meal.category)})</option>
                 `;
             }).join("");
             var html = `
                 <div class="missing-transaction-position-meal-reference">
-                    <select class="meal-reference-select" data-position-name="${transaction.positions[0].name}">
+                    <select class="meal-reference-select" data-position-name="${escapeHTML(transaction.positions[0].name)}">
                         <option disabled selected>Essen zuordnen</option>
                         ${optionHtml}
                     </select>
@@ -524,15 +539,15 @@ function getTransactionHTML(transaction) {
                         <div class="horizontal-con">
                             <span>${transaction.datum.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' })}</span>
                             <div class="type-con">
-                                <span>${transaction.typName}</span>
+                                <span>${escapeHTML(transaction.typName)}</span>
                                 <span>&middot;</span>
-                                <span>${transaction.positions[0].name}</span>
+                                <span>${escapeHTML(transaction.positions[0].name)}</span>
                             </div>
                         </div>
                         <div class="location-con">
-                            <span>${locations.find(location => location.internalName === transaction.ortName)?.name || "Unbekannt"}</span>
+                            <span>${escapeHTML(locations.find(location => location.internalName === transaction.ortName)?.name || "Unbekannt")}</span>
                             <span>&middot;</span>
-                            <span>${transaction.kaName}</span>
+                            <span>${escapeHTML(transaction.kaName)}</span>
                         </div>
                     </div>
                     ${html}
@@ -555,13 +570,13 @@ function getTransactionPositionHTML(position) {
         return `
             <div class="transaction-position">
                 <div>
-                    <span>${position.name}</span>
+                    <span>${escapeHTML(position.name)}</span>
                     <span>${position.menge}x ${currencyFormatter.format(position.epreis)}</span>
                 </div>
                 <div class="transaction-position-meal-reference">
                     <span>[${position.meal.id}]</span>
-                    <span>${position.meal.name}</span>
-                    <span>${position.meal.category}</span>
+                    <span>${escapeHTML(position.meal.name)}</span>
+                    <span>${escapeHTML(position.meal.category)}</span>
                 </div>
                 <span>${currencyFormatter.format(position.gpreis)}</span>
             </div>`;
@@ -569,17 +584,17 @@ function getTransactionPositionHTML(position) {
         var filteredMeals = position.meals.filter(meal => Math.abs(meal.prices.students - position.epreis) < 0.005);
         var html = filteredMeals.map(meal => {
             return `
-                <option value="${meal.id}">${meal.name} (${meal.internalCategory || '-'} | ${currencyFormatter.format(meal.prices.students)} | ${meal.category})</option>
+                <option value="${meal.id}">${escapeHTML(meal.name)} (${escapeHTML(meal.internalCategory || '-')} | ${currencyFormatter.format(meal.prices.students)} | ${escapeHTML(meal.category)})</option>
             `;
         }).join("");
         return `
             <div class="transaction-position">
                 <div>
-                    <span>${position.name}</span>
+                    <span>${escapeHTML(position.name)}</span>
                     <span>${position.menge}x ${currencyFormatter.format(position.epreis)}</span>
                 </div>
                 <div class="missing-transaction-position-meal-reference">
-                    <select class="meal-reference-select" data-position-name="${position.name}">
+                    <select class="meal-reference-select" data-position-name="${escapeHTML(position.name)}">
                         <option disabled selected>Essen zuordnen</option>
                         ${html}
                     </select>
@@ -592,7 +607,7 @@ function getTransactionPositionHTML(position) {
         return `
             <div class="transaction-position">
                 <div>
-                    <span>${position.name}</span>
+                    <span>${escapeHTML(position.name)}</span>
                     <span>${position.menge}x ${currencyFormatter.format(position.epreis)}</span>
                 </div>
                 <div class="missing-transaction-position-meal-reference">

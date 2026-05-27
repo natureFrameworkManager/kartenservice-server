@@ -13,8 +13,6 @@
 - **Login errors not shown to the user** (`js.js`): `loginFlow()` only `console.log`s validation and credential errors; no message is displayed in the UI when login fails
 - **`runSyncSSE` button stays permanently disabled if stream ends without a `done` event** (`js.js`): The read loop exits when the stream closes (`done = true`) but only re-enables the button if a `done` SSE event was received; an abruptly closed stream leaves the button stuck
 - **`add-location-btn` has no input validation and no error feedback** (`js.js`): Submitting with an empty name is not prevented client-side; non-201 responses (e.g. 400) are silently ignored with no message shown to the user
-- **XSS via unescaped server data injected as HTML** (`js.js`): `getLocationMealHTML`, `displayLocationTable`, `getTransactionHTML`, and `getTransactionPositionHTML` interpolate server-provided strings (names, categories, etc.) directly into template-literal HTML without escaping, allowing stored XSS if any value contains HTML
-- **`groupTransactionsByDay` groups by UTC date, causing wrong day buckets in non-UTC timezones** (`js.js`): `transaction.datum.toISOString().split("T")[0]` uses UTC midnight as the day boundary; transactions near midnight are bucketed under the wrong calendar day for users in timezones east of UTC
 
 ### Backend Bugs & Missing Implementations
 
