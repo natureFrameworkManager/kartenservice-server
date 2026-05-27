@@ -2,7 +2,6 @@
 
 ## ToDO:
 - Remove transaction history after card deletion
-- Add docker image for easy deployment
 - Add documentation and readme content
 - Improve file structure
 
