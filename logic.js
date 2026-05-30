@@ -199,8 +199,9 @@ export async function fetchMensaXMLMeals(pastDate, /** @type {((data: object) =>
     var lastWeekMonday = new Date();
     lastWeekMonday.setDate(lastWeekMonday.getDate() - lastWeekMonday.getDay() - 6);
     var today = new Date(new Date().setHours(0, 0, 0, 0));
+    var futureDate = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000)); // add 1 Month to end date to include meals of the next month
     var days = [];
-    for (var d = lastWeekMonday; d <= today; d.setDate(d.getDate() + 1)) {
+    for (var d = lastWeekMonday; d <= futureDate; d.setDate(d.getDate() + 1)) {
         days.push(new Date(d));
     }
 
