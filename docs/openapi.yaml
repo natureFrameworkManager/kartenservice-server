@@ -8,7 +8,7 @@ info:
 
     Authenticated endpoints use HTTP Basic Auth where the username is the card number
     and the password is the card password stored in Infisical.
-  version: 1.0.0
+  version: 1.0.1
 
 servers:
   - url: https://api.casparkroll.de/kartenservice/v1
