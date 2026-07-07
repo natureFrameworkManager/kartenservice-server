@@ -630,9 +630,12 @@ export function getMensaXMLMeals(canteenId, date) {
  * @param {string|null} date 
  * @param {number|null} canteenId 
  * @param {string|null} internalCategory 
+ * @param {string|null|{ids?: number[], date?: string[], categories?: string[], canteenIds?: number[], dateStart?: string|null, dateEnd?: string|null}} filterings 
  * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
  */
-export function getMeals(date = null, canteenId = null, internalCategory = null) {
+export function getMeals(date = null, canteenId = null, internalCategory = null, filterings = null) {
+    console.log(`params: date=${date}, canteenId=${canteenId}, internalCategory=${internalCategory}, filterings=${JSON.stringify(filterings)}`);
+    const filters = typeof filterings === 'object' && filterings !== null ? filterings : {};
     var dateObj = date ? new Date(date) : null;
     var sql = "SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
     /** @type {any[]} */
@@ -641,7 +644,7 @@ export function getMeals(date = null, canteenId = null, internalCategory = null)
         sql += " AND date = ?";
         params.push(dateObj.getTime());
     }
-    if (canteenId) {
+    if (canteenId && !filters.canteenIds) {
         sql += " AND mensa_location_id = ?";
         params.push(canteenId);
     }
@@ -649,6 +652,31 @@ export function getMeals(date = null, canteenId = null, internalCategory = null)
         sql += " AND internalCategory = ?";
         params.push(internalCategory);
     }
+    if (filters.date && filters.date.length > 0 && !dateObj) {
+        sql += ` AND meals.date IN (${filters.date.map(() => '?').join(',')})`;
+        params.push(...filters.date.map(d => new Date(d).getTime()));
+    }
+    if (filters.dateStart && (!filters.date || filters.date.length === 0) && !dateObj) {
+        sql += " AND meals.date >= ?";
+        params.push(new Date(filters.dateStart).getTime());
+    }
+    if (filters.dateEnd && (!filters.date || filters.date.length === 0) && !dateObj) {
+        sql += " AND meals.date <= ?";
+        params.push(new Date(filters.dateEnd).getTime());
+    }
+    if (filters.ids && filters.ids.length > 0) {
+        sql += ` AND meals.id IN (${filters.ids.map(() => '?').join(',')})`;
+        params.push(...filters.ids);
+    }
+    if (filters.canteenIds && filters.canteenIds.length > 0 && !canteenId) {
+        sql += ` AND meals.mensa_location_id IN (${filters.canteenIds.map(() => '?').join(',')})`;
+        params.push(...filters.canteenIds);
+    }
+    if (filters.categories && filters.categories.length > 0) {
+        sql += ` AND meals.category IN (${filters.categories.map(() => '?').join(',')})`;
+        params.push(...filters.categories);
+    }
+    console.log(`Executing SQL: ${sql} with params: ${params}`);
     const stmt = db.prepare(sql);
     const results = stmt.all(...params);
     return results.map(/** @param {any} r */ r => ({

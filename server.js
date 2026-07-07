@@ -92,15 +92,46 @@ async function authenticate(request, reply) {
     /** @type {any} */ (request).authenticatedCard = cardnumber;
 }
 
-/** Returns all meals, optionally filtered by date, canteen, and internal category. */
+/**
+ * @param {any} value
+ * @returns {any[]}
+ */
+function asArray(value) {
+    if (value === undefined) return [];
+    return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * @param {Date} date
+ * @returns {string}
+ */
+function toDateString(date) {
+    return date.toISOString().split('T')[0];
+}
+
+/** Returns all meals, optionally filtered by query parameters. */
 fastify.get('/meals', async (request, reply) => {
-    return getMeals();
+    const query = /** @type {any} */ (request.query);
+    const today = query.today !== undefined;
+    return getMeals(null, null, null, {
+        ids: asArray(query.id).map(Number).filter(Number.isFinite),
+        date: today ? [toDateString(new Date())] : asArray(query.date) ?? null,
+        dateStart: query['date-start'] ?? null,
+        dateEnd: query['date-end'] ?? null,
+        canteenIds: asArray(query.canteenId).map(Number).filter(Number.isFinite),
+        categories: asArray(query.category).filter(v => v !== '')
+    });
 });
 
 /** Returns all meals for the given date. */
 fastify.get('/meals/:date', async (request, reply) => {
+    const query = /** @type {any} */ (request.query);
     const { date } = /** @type {ParamsDate} */ (request.params);
-    const meals = getMeals(date);
+    const meals = getMeals(date, null, null, {
+        ids: asArray(query.id).map(Number).filter(Number.isFinite),
+        canteenIds: asArray(query.canteenId).map(Number).filter(Number.isFinite),
+        categories: asArray(query.category).filter(v => v !== '')
+    });
     if (meals.length === 0) {
         reply.code(404).send({ error: 'Not found' });
         return;
@@ -110,8 +141,12 @@ fastify.get('/meals/:date', async (request, reply) => {
 
 /** Returns all meals for the given date and canteen. */
 fastify.get('/meals/:date/:canteenId', async (request, reply) => {
+    const query = /** @type {any} */ (request.query);
     const { date, canteenId } = /** @type {ParamsDateCanteen} */ (request.params);
-    const meals = getMeals(date, Number(canteenId));
+    const meals = getMeals(date, Number(canteenId), null, {
+        ids: asArray(query.id).map(Number).filter(Number.isFinite),
+        categories: asArray(query.category).filter(v => v !== '')
+    });
     if (meals.length === 0) {
         reply.code(404).send({ error: 'Not found' });
         return;

@@ -252,6 +252,53 @@ paths:
       summary: Get all meals
       description: Returns all meals from the database with canteen location data.
       operationId: getMeals
+      parameters:
+        - name: id
+          in: query
+          description: Filter by meal ID (can be repeated)
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: date
+          in: query
+          description: Filter by meal date (can be repeated)
+          schema:
+            type: array
+            items:
+              type: string
+              format: date
+        - name: date-start
+          in: query
+          description: Filter by meal date greater than or equal to this date
+          schema:
+            type: string
+            format: date
+        - name: date-end
+          in: query
+          description: Filter by meal date less than or equal to this date
+          schema:
+            type: string
+            format: date
+        - name: canteenId
+          in: query
+          description: Filter by canteen ID (can be repeated)
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: today
+          in: query
+          description: If present, filters meals to only those for today (overrides `date` filter)
+          schema:
+            type: boolean
+        - name: category
+          in: query
+          description: Filter by meal category (e.g., "Essen", "Beilage")
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: List of meals.
@@ -276,6 +323,27 @@ paths:
             type: string
             format: date
             example: "2025-11-12"
+        - name: id
+          in: query
+          description: Filter by meal ID (can be repeated)
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: canteenId
+          in: query
+          description: Filter by canteen ID (can be repeated)
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: category
+          in: query
+          description: Filter by meal category (e.g., "Essen", "Beilage")
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: List of meals for the given date.
@@ -308,6 +376,20 @@ paths:
           schema:
             type: integer
             example: 63
+        - name: id
+          in: query
+          description: Filter by meal ID (can be repeated)
+          schema:
+            type: array
+            items:
+              type: integer
+        - name: category
+          in: query
+          description: Filter by meal category (e.g., "Essen", "Beilage")
+          schema:
+            type: array
+            items:
+              type: string
       responses:
         "200":
           description: List of meals for the given date and canteen.
