@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config({ quiet: true });
 
 import { getAuthToken } from './api.js';
-import { updateMealLookup, fetchOpenMensaMeals, fetchMensaXMLMeals, fetchTransAndTranspos } from './logic.js';
+import { updateMealLookup, fetchOpenMensaMeals, fetchMensaXMLMeals, fetchTransAndTranspos, computeCardStats } from './logic.js';
 import { getCard, insertCard, updateCard, deleteCard, setupInfisicalClient, getTransList, getTransPosList, getMeals, getCardMeals, getMensaLocations, insertMensaLocation, updateMensaLocation, updateInternalCategory, upsertLocationFromRemote, insertMealsFromRemote, insertTransListFromRemote, insertTransPosList } from './db.js';
 
 /**
@@ -264,6 +264,22 @@ fastify.get('/transpos/:cardNumber', { preHandler: authenticate }, async (reques
         return;
     }
     return getTransPosList(cardNumber);
+});
+
+/** Returns comprehensive usage statistics for the authenticated card. */
+fastify.get('/card/:cardNumber/stats', { preHandler: authenticate }, async (request, reply) => {
+    const { cardNumber } = /** @type {ParamsCardNumber} */ (request.params);
+    if (/** @type {any} */ (request).authenticatedCard !== cardNumber) {
+        reply.code(403).send({ error: 'Forbidden' });
+        return;
+    }
+    const query = /** @type {any} */ (request.query);
+    const dateStart = query['date-start'] ?? null;
+    const dateEnd = query['date-end'] ?? null;
+    const locationIds = query['location-id']
+        ? (Array.isArray(query['location-id']) ? query['location-id'] : [query['location-id']]).map(Number).filter(Number.isFinite)
+        : null;
+    return computeCardStats(cardNumber, dateStart, dateEnd, locationIds);
 });
 
 /** Triggers an async fetch of meals from the OpenMensa API for the past 7 days. */

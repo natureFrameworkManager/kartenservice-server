@@ -66,6 +66,11 @@
             "canteen2id": 0,
             ...
         },
+        "register": {
+            "register1": 0,
+            "register2": 0,
+            ...
+        },
     },
     "spend-amount-averages": {
         "total": 0,

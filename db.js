@@ -984,3 +984,124 @@ export function insertTransPosListFromRemote(transPosList, cardnumber) {
         );
     }
 }
+
+/**
+ * @typedef {Object} TransRow
+ * @property {number} id
+ * @property {string} transFullId
+ * @property {number} datum - Unix timestamp (ms)
+ * @property {string} ortName
+ * @property {string} kaName
+ * @property {string} typName
+ * @property {number} zahlBetrag
+ * @property {string} cardnumber
+ */
+
+/**
+ * Retrieves transactions filtered by cardnumber, optional date range and optional location ids.
+ * Used by the /card/{cardnumber}/stats endpoint for efficient stats computation.
+ * Only selects the columns needed for statistics.
+ *
+ * @param {string} cardnumber - The card number to filter by.
+ * @param {string|null} dateStart - ISO date string (inclusive lower bound), or null for no lower bound.
+ * @param {string|null} dateEnd - ISO date string (inclusive upper bound), or null for no upper bound.
+ * @param {number[]|null} locationIds - Array of mensa_locations ids to filter by ortName, or null for all locations.
+ * @returns {TransRow[]}
+ */
+export function getTransForStats(cardnumber, dateStart, dateEnd, locationIds) {
+    let sql = 'SELECT id, transFullId, datum, ortName, kaName, typName, zahlBetrag, cardnumber FROM trans WHERE cardnumber = ?';
+    /** @type {any[]} */
+    const params = [cardnumber];
+
+    if (dateStart) {
+        sql += ' AND datum >= ?';
+        params.push(new Date(dateStart).getTime());
+    }
+    if (dateEnd) {
+        // End of the day inclusive
+        const end = new Date(dateEnd);
+        end.setUTCHours(23, 59, 59, 999);
+        sql += ' AND datum <= ?';
+        params.push(end.getTime());
+    }
+    if (locationIds && locationIds.length > 0) {
+        // Filter by matching ortName to internalName in mensa_locations
+        const placeholders = locationIds.map(() => '?').join(',');
+        sql += ` AND ortName IN (SELECT internalName FROM mensa_locations WHERE id IN (${placeholders}) AND internalName IS NOT NULL)`;
+        params.push(...locationIds.map(Number));
+    }
+    sql += ' ORDER BY datum ASC';
+
+    const stmt = db.prepare(sql);
+    const results = stmt.all(...params);
+    return results.map(/** @param {any} r */ r => ({
+        id: r.id,
+        transFullId: r.transFullId,
+        datum: r.datum,
+        ortName: r.ortName,
+        kaName: r.kaName,
+        typName: r.typName,
+        zahlBetrag: r.zahlBetrag,
+        cardnumber: r.cardnumber
+    }));
+}
+
+/**
+ * @typedef {Object} TransPosRow
+ * @property {number} id
+ * @property {string} transFullId
+ * @property {number} posId
+ * @property {string} name
+ * @property {number} menge
+ * @property {number} epreis
+ * @property {number|null} rabatt
+ * @property {number} gpreis
+ * @property {number|null} bewertung
+ */
+
+/**
+ * Retrieves transaction positions for a card, optionally filtered by date range and location ids.
+ * Joins with trans to filter by cardnumber and date.
+ * Used by the /card/{cardnumber}/stats endpoint.
+ *
+ * @param {string} cardnumber - The card number to filter by.
+ * @param {string|null} dateStart - ISO date string (inclusive lower bound), or null.
+ * @param {string|null} dateEnd - ISO date string (inclusive upper bound), or null.
+ * @param {number[]|null} locationIds - Array of mensa_locations ids, or null for all.
+ * @returns {TransPosRow[]}
+ */
+export function getTransPosForStats(cardnumber, dateStart, dateEnd, locationIds) {
+    let sql = 'SELECT transpos.id, transpos.transFullId, transpos.posId, transpos.name, transpos.menge, transpos.epreis, transpos.rabatt, transpos.gpreis, transpos.bewertung FROM transpos INNER JOIN trans ON transpos.transFullId = trans.transFullId AND trans.cardnumber = ?';
+    /** @type {any[]} */
+    const params = [cardnumber];
+
+    if (dateStart) {
+        sql += ' AND trans.datum >= ?';
+        params.push(new Date(dateStart).getTime());
+    }
+    if (dateEnd) {
+        const end = new Date(dateEnd);
+        end.setUTCHours(23, 59, 59, 999);
+        sql += ' AND trans.datum <= ?';
+        params.push(end.getTime());
+    }
+    if (locationIds && locationIds.length > 0) {
+        const placeholders = locationIds.map(() => '?').join(',');
+        sql += ` AND trans.ortName IN (SELECT internalName FROM mensa_locations WHERE id IN (${placeholders}) AND internalName IS NOT NULL)`;
+        params.push(...locationIds.map(Number));
+    }
+
+    const stmt = db.prepare(sql);
+    const results = stmt.all(...params);
+    return results.map(/** @param {any} r */ r => ({
+        id: r.id,
+        transFullId: r.transFullId,
+        posId: r.posId,
+        name: r.name,
+        menge: r.menge,
+        epreis: r.epreis,
+        rabatt: r.rabatt,
+        gpreis: r.gpreis,
+        bewertung: r.bewertung
+    }));
+}
