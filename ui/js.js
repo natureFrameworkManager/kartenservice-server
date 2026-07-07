@@ -82,6 +82,57 @@ async function getLocations() {
 }
 
 /**
+ * Order:
+ * "Veganes Gericht"
+ * "Vegetarisches Gericht"
+ * "Fleischgericht"
+ * "Fischgericht"
+ * "WOK"
+ * "Schneller Teller"
+ * "Pastateller"
+ * "Salat"
+ * "Bowl"
+ * "Sättigungsbeilage"
+ * "Gemüsebeilage"
+ * "Dessert"
+ * "Smoothie"
+ * @param {Meal[]} meals 
+ */
+function sortMealsByCategory(meals) {
+    return meals.sort((a, b) => {
+        const categoryOrder = [
+            "Veganes Gericht",
+            "Vegetarisches Gericht",
+            "Fleischgericht",
+            "Fischgericht",
+            "WOK",
+            "Schneller Teller",
+            "Pastateller",
+            "Salat",
+            "Bowl",
+            "Sättigungsbeilage",
+            "Gemüsebeilage",
+            "Dessert",
+            "Smoothie"
+        ];
+        if (!categoryOrder.includes(a.category) && !categoryOrder.includes(b.category)) {
+            return a.category.localeCompare(b.category);
+        } else if (!categoryOrder.includes(a.category)) {
+            return 1;
+        } else if (!categoryOrder.includes(b.category)) {
+            return -1;
+        }
+        if (a.category === b.category) {
+            if (a.prices.students === b.prices.students) {
+                return a.name.localeCompare(b.name);
+            }
+            return a.prices.students - b.prices.students;
+        }
+        return categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category);
+    });
+}
+
+/**
  * @param {number} id
  * @param {string} name
  * @param {string|null} internalName
@@ -400,7 +451,8 @@ function displayMeals(mealsByLocation) {
  * @returns {string}
  */
 function getLocationMealHTML(meals) {
-    return meals.map(meal => {
+    var sortedMeals = sortMealsByCategory(meals);
+    return sortedMeals.map(meal => {
         return `
             <div class="meal-con" data-meal-id="${meal.id}">
                 <span class="meal-name">${escapeHTML(meal.name)}</span>
@@ -685,6 +737,9 @@ async function mealsLocationsFlow() {
     console.log(locations);
 
     let meals = await getMeals(null, new Date());
+    if (document.querySelector("#meals-view input#date-input").value == "") {
+        document.querySelector("#meals-view input#date-input").value = new Date().toISOString().split("T")[0];
+    }
     meals = groupMealsByLocation(meals);
     displayMeals(meals);
     console.log(meals);
@@ -815,12 +870,16 @@ changeView("meals-view");
         await mealsLocationsFlow();
         await transactionDiplayFlow();
     } catch (error) {
+        console.error(error)
         displayUnreachableHost();
     }
 
     document.querySelector("#meals-view select#location-input").addEventListener("change", async (event) => {
         var dateValue = document.querySelector("#meals-view input#date-input").value;
-        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00");
+        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00Z");
+        if (dateValue == "") {
+            document.querySelector("#meals-view input#date-input").value = date.toISOString().split("T")[0];
+        }
         const locationId = event.target.value;
         let meals = await getMeals(locationId === "" ? null : locationId, date);
         meals = groupMealsByLocation(meals);
@@ -829,7 +888,10 @@ changeView("meals-view");
     });
     document.querySelector("#meals-view input#date-input").addEventListener("change", async (event) => {
         var dateValue = event.target.value;
-        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00");
+        const date = dateValue == "" ? new Date() : new Date(dateValue + "T00:00:00Z");
+        if (dateValue == "") {
+            document.querySelector("#meals-view input#date-input").value = date.toISOString().split("T")[0];
+        }
         const locationId = document.querySelector("#meals-view select#location-input").value;
         let meals = await getMeals(locationId === "" ? null : locationId, date);
         meals = groupMealsByLocation(meals);
