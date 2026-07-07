@@ -71,7 +71,6 @@ An Infisical self-hosted deployment (for secret management) can be started with 
 
 - Remove transaction history after card deletion
 - Improve file structure (see suggestion below)
-- Fix UI using wrong date for request of meals (one day off)
 
 ### Backend Bugs & Missing Implementations
 
