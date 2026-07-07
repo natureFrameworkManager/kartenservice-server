@@ -626,57 +626,109 @@ export function getMensaXMLMeals(canteenId, date) {
 }
 
 /**
- * Returns meals filtered by date, canteen, and internal category.
- * @param {string|null} date 
- * @param {number|null} canteenId 
- * @param {string|null} internalCategory 
- * @param {string|null|{ids?: number[], date?: string[], categories?: string[], canteenIds?: number[], dateStart?: string|null, dateEnd?: string|null}} filterings 
+ * @typedef {Object} MealFilters
+ * @property {number[]=} ids
+ * @property {string[]=} date
+ * @property {string|null=} dateStart
+ * @property {string|null=} dateEnd
+ * @property {number[]=} canteenIds
+ * @property {string[]=} categories
+ * @property {string[]=} internalCategories
+ * @property {string[]=} names
+ * @property {number|null=} priceStudentMin
+ * @property {number|null=} priceStudentMax
+ * @property {number|null=} priceEmployeesMin
+ * @property {number|null=} priceEmployeesMax
+ * @property {number|null=} pricePupilsMin
+ * @property {number|null=} pricePupilsMax
+ * @property {number|null=} priceOthersMin
+ * @property {number|null=} priceOthersMax
+ * @property {string[]=} notes
+ * @property {string[]=} components
+ * @property {string[]=} tags
+ * @property {boolean|null=} hasInternalCategory
+ * @property {boolean|null=} hasNotes
+ * @property {boolean|null=} hasComponents
+ * @property {boolean|null=} hasTags
+ */
+
+/**
+ * Returns meals filtered by date, canteen, and meal fields.
+ * @param {string|null} date
+ * @param {number|null} canteenId
+ * @param {string|null} internalCategory
+ * @param {MealFilters|null} filterings
  * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
  */
 export function getMeals(date = null, canteenId = null, internalCategory = null, filterings = null) {
-    console.log(`params: date=${date}, canteenId=${canteenId}, internalCategory=${internalCategory}, filterings=${JSON.stringify(filterings)}`);
+    /** @type {MealFilters} */
     const filters = typeof filterings === 'object' && filterings !== null ? filterings : {};
-    var dateObj = date ? new Date(date) : null;
-    var sql = "SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
+    var sql = "SELECT meals.id, meals.mensa_location_id, mensa_locations.name AS locationName, mensa_locations.internalName AS locationInternalName, mensa_locations.openMensaId AS locationOpenMensaId, mensa_locations.mensaXMLId AS locationMensaXMLId, meals.date, meals.name, meals.category, meals.internalCategory, meals.prices, meals.notes, meals.components, meals.tags FROM meals INNER JOIN mensa_locations ON meals.mensa_location_id = mensa_locations.id WHERE 1=1";
     /** @type {any[]} */
     var params = [];
-    if (dateObj) {
-        sql += " AND date = ?";
-        params.push(dateObj.getTime());
+    const addIn = (/** @type {string} */ column, /** @type {any[]} */ values) => {
+        if (values && values.length > 0) {
+            sql += ` AND ${column} IN (${values.map(() => '?').join(',')})`;
+            params.push(...values);
+        }
+    };
+    const addLikeAny = (/** @type {string} */ column, /** @type {string[]} */ values) => {
+        if (values && values.length > 0) {
+            sql += ` AND (${values.map(() => `${column} LIKE ?`).join(' OR ')})`;
+            params.push(...values.map(value => `%${value}%`));
+        }
+    };
+    const addJsonContains = (/** @type {string} */ column, /** @type {any[]} */ values) => {
+        if (values && values.length > 0) {
+            sql += ` AND ${values.map(() => `EXISTS (SELECT 1 FROM json_each(${column}) WHERE value = ?)`).join(' AND ')}`;
+            params.push(...values);
+        }
+    };
+    if (date) addIn('meals.date', [new Date(date).getTime()]);
+    else if (filters.date && filters.date.length > 0) addIn('meals.date', filters.date.map((/** @type {string} */ d) => new Date(d).getTime()));
+    else {
+        if (filters.dateStart) {
+            sql += " AND meals.date >= ?";
+            params.push(new Date(filters.dateStart).getTime());
+        }
+        if (filters.dateEnd) {
+            sql += " AND meals.date <= ?";
+            params.push(new Date(filters.dateEnd).getTime());
+        }
     }
-    if (canteenId && !filters.canteenIds) {
-        sql += " AND mensa_location_id = ?";
-        params.push(canteenId);
+    if (canteenId) addIn('meals.mensa_location_id', [canteenId]);
+    else addIn('meals.mensa_location_id', filters.canteenIds ?? []);
+    if (internalCategory) addLikeAny('meals.internalCategory', [internalCategory]);
+    addIn('meals.id', filters.ids ?? []);
+    addLikeAny('meals.category', filters.categories ?? []);
+    addLikeAny('meals.internalCategory', filters.internalCategories ?? []);
+    addLikeAny('meals.name', filters.names ?? []);
+    addJsonContains('meals.notes', filters.notes ?? []);
+    addJsonContains('meals.components', filters.components ?? []);
+    addJsonContains('meals.tags', filters.tags ?? []);
+    for (const priceFilter of [
+        { min: filters.priceStudentMin, max: filters.priceStudentMax, path: 'students' },
+        { min: filters.priceEmployeesMin, max: filters.priceEmployeesMax, path: 'employees' },
+        { min: filters.pricePupilsMin, max: filters.pricePupilsMax, path: 'pupils' },
+        { min: filters.priceOthersMin, max: filters.priceOthersMax, path: 'others' }
+    ]) {
+        if (priceFilter.min != null) {
+            sql += ` AND json_extract(meals.prices, '$.${priceFilter.path}') >= ?`;
+            params.push(priceFilter.min);
+        }
+        if (priceFilter.max != null) {
+            sql += ` AND json_extract(meals.prices, '$.${priceFilter.path}') <= ?`;
+            params.push(priceFilter.max);
+        }
     }
-    if (internalCategory) {
-        sql += " AND internalCategory = ?";
-        params.push(internalCategory);
-    }
-    if (filters.date && filters.date.length > 0 && !dateObj) {
-        sql += ` AND meals.date IN (${filters.date.map(() => '?').join(',')})`;
-        params.push(...filters.date.map(d => new Date(d).getTime()));
-    }
-    if (filters.dateStart && (!filters.date || filters.date.length === 0) && !dateObj) {
-        sql += " AND meals.date >= ?";
-        params.push(new Date(filters.dateStart).getTime());
-    }
-    if (filters.dateEnd && (!filters.date || filters.date.length === 0) && !dateObj) {
-        sql += " AND meals.date <= ?";
-        params.push(new Date(filters.dateEnd).getTime());
-    }
-    if (filters.ids && filters.ids.length > 0) {
-        sql += ` AND meals.id IN (${filters.ids.map(() => '?').join(',')})`;
-        params.push(...filters.ids);
-    }
-    if (filters.canteenIds && filters.canteenIds.length > 0 && !canteenId) {
-        sql += ` AND meals.mensa_location_id IN (${filters.canteenIds.map(() => '?').join(',')})`;
-        params.push(...filters.canteenIds);
-    }
-    if (filters.categories && filters.categories.length > 0) {
-        sql += ` AND meals.category IN (${filters.categories.map(() => '?').join(',')})`;
-        params.push(...filters.categories);
-    }
-    console.log(`Executing SQL: ${sql} with params: ${params}`);
+    if (filters.hasInternalCategory === true) sql += " AND meals.internalCategory IS NOT NULL";
+    if (filters.hasInternalCategory === false) sql += " AND meals.internalCategory IS NULL";
+    if (filters.hasNotes === true) sql += " AND meals.notes IS NOT NULL";
+    if (filters.hasNotes === false) sql += " AND meals.notes IS NULL";
+    if (filters.hasComponents === true) sql += " AND meals.components IS NOT NULL";
+    if (filters.hasComponents === false) sql += " AND meals.components IS NULL";
+    if (filters.hasTags === true) sql += " AND meals.tags IS NOT NULL";
+    if (filters.hasTags === false) sql += " AND meals.tags IS NULL";
     const stmt = db.prepare(sql);
     const results = stmt.all(...params);
     return results.map(/** @param {any} r */ r => ({

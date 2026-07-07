@@ -250,55 +250,121 @@ paths:
     get:
       tags: [Meals]
       summary: Get all meals
-      description: Returns all meals from the database with canteen location data.
+      description: |
+        Returns all meals from the database with canteen location data.
+
+        Filter combination:
+        - Different filter parameters are combined with AND.
+        - Multiple values of the same `id`, `date`, or `canteenId` parameter are combined with OR.
+        - Multiple `category`, `internalCategory`, and `name` values are substring matches and are combined with OR.
+        - Multiple `notes`, `components`, and `tags` values require all provided values to be present.
+        - Boolean `has-*` filters check whether the respective field is present or absent.
       operationId: getMeals
       parameters:
         - name: id
           in: query
           description: Filter by meal ID (can be repeated)
-          schema:
-            type: array
-            items:
-              type: integer
+          schema: { type: array, items: { type: integer } }
         - name: date
           in: query
           description: Filter by meal date (can be repeated)
-          schema:
-            type: array
-            items:
-              type: string
-              format: date
+          schema: { type: array, items: { type: string, format: date } }
         - name: date-start
           in: query
           description: Filter by meal date greater than or equal to this date
-          schema:
-            type: string
-            format: date
+          schema: { type: string, format: date }
         - name: date-end
           in: query
           description: Filter by meal date less than or equal to this date
-          schema:
-            type: string
-            format: date
+          schema: { type: string, format: date }
+        - name: date-offset
+          in: query
+          description: Filter by date offset from today in days
+          schema: { type: integer }
+        - name: week-date
+          in: query
+          description: Base date for week filtering
+          schema: { type: string, format: date }
         - name: canteenId
           in: query
           description: Filter by canteen ID (can be repeated)
-          schema:
-            type: array
-            items:
-              type: integer
-        - name: today
-          in: query
-          description: If present, filters meals to only those for today (overrides `date` filter)
-          schema:
-            type: boolean
+          schema: { type: array, items: { type: integer } }
         - name: category
           in: query
-          description: Filter by meal category (e.g., "Essen", "Beilage")
-          schema:
-            type: array
-            items:
-              type: string
+          description: Filter by meal category substring (can be repeated; values are OR-combined)
+          schema: { type: array, items: { type: string } }
+        - name: internalCategory
+          in: query
+          description: Filter by internal category substring (can be repeated; values are OR-combined)
+          schema: { type: array, items: { type: string } }
+        - name: name
+          in: query
+          description: Filter by meal name substring (can be repeated; values are OR-combined)
+          schema: { type: array, items: { type: string } }
+        - name: price-student-min
+          in: query
+          schema: { type: number }
+        - name: price-student-max
+          in: query
+          schema: { type: number }
+        - name: price-employees-min
+          in: query
+          schema: { type: number }
+        - name: price-employees-max
+          in: query
+          schema: { type: number }
+        - name: price-pupils-min
+          in: query
+          schema: { type: number }
+        - name: price-pupils-max
+          in: query
+          schema: { type: number }
+        - name: price-others-min
+          in: query
+          schema: { type: number }
+        - name: price-others-max
+          in: query
+          schema: { type: number }
+        - name: notes
+          in: query
+          description: Require notes containing each repeated value
+          schema: { type: array, items: { type: string } }
+        - name: components
+          in: query
+          description: Require components containing each repeated value
+          schema: { type: array, items: { type: string } }
+        - name: tags
+          in: query
+          description: Require tags containing each repeated value
+          schema: { type: array, items: { type: string } }
+        - name: has-internal-category
+          in: query
+          schema: { type: boolean }
+        - name: has-notes
+          in: query
+          schema: { type: boolean }
+        - name: has-components
+          in: query
+          schema: { type: boolean }
+        - name: has-tags
+          in: query
+          schema: { type: boolean }
+        - name: today
+          in: query
+          description: Filter meals to today
+          schema: { type: boolean }
+        - name: next
+          in: query
+          description: Filter meals to tomorrow
+          schema: { type: boolean }
+        - name: week
+          in: query
+          description: Filter meals to the current week
+          schema: { type: boolean }
+        - name: week-next
+          in: query
+          description: Filter meals to the next week
+          schema: { type: boolean }
       responses:
         "200":
           description: List of meals.
@@ -313,7 +379,16 @@ paths:
     get:
       tags: [Meals]
       summary: Get meals for a date
-      description: Returns all meals for the given date. Returns 404 if no meals are found.
+      description: |
+        Returns all meals for the given date. Returns 404 if no meals are found.
+
+        Filter combination:
+        - The path date is always applied; date query parameters are ignored.
+        - Different filter parameters are combined with AND.
+        - Multiple values of the same `id` or `canteenId` parameter are combined with OR.
+        - Multiple `category`, `internalCategory`, and `name` values are substring matches and are combined with OR.
+        - Multiple `notes`, `components`, and `tags` values require all provided values to be present.
+        - Boolean `has-*` filters check whether the respective field is present or absent.
       operationId: getMealsByDate
       parameters:
         - name: date
@@ -326,24 +401,66 @@ paths:
         - name: id
           in: query
           description: Filter by meal ID (can be repeated)
-          schema:
-            type: array
-            items:
-              type: integer
+          schema: { type: array, items: { type: integer } }
         - name: canteenId
           in: query
           description: Filter by canteen ID (can be repeated)
-          schema:
-            type: array
-            items:
-              type: integer
+          schema: { type: array, items: { type: integer } }
         - name: category
           in: query
-          description: Filter by meal category (e.g., "Essen", "Beilage")
-          schema:
-            type: array
-            items:
-              type: string
+          description: Filter by meal category (can be repeated)
+          schema: { type: array, items: { type: string } }
+        - name: internalCategory
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: name
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: price-student-min
+          in: query
+          schema: { type: number }
+        - name: price-student-max
+          in: query
+          schema: { type: number }
+        - name: price-employees-min
+          in: query
+          schema: { type: number }
+        - name: price-employees-max
+          in: query
+          schema: { type: number }
+        - name: price-pupils-min
+          in: query
+          schema: { type: number }
+        - name: price-pupils-max
+          in: query
+          schema: { type: number }
+        - name: price-others-min
+          in: query
+          schema: { type: number }
+        - name: price-others-max
+          in: query
+          schema: { type: number }
+        - name: notes
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: components
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: tags
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: has-internal-category
+          in: query
+          schema: { type: boolean }
+        - name: has-notes
+          in: query
+          schema: { type: boolean }
+        - name: has-components
+          in: query
+          schema: { type: boolean }
+        - name: has-tags
+          in: query
+          schema: { type: boolean }
       responses:
         "200":
           description: List of meals for the given date.
@@ -360,7 +477,16 @@ paths:
     get:
       tags: [Meals]
       summary: Get meals for a date and canteen
-      description: Returns all meals for the given date and canteen. Returns 404 if no meals are found.
+      description: |
+        Returns all meals for the given date and canteen. Returns 404 if no meals are found.
+
+        Filter combination:
+        - The path date and canteen are always applied; date and canteenId query parameters are ignored.
+        - Different filter parameters are combined with AND.
+        - Multiple values of the same `id` parameter are combined with OR.
+        - Multiple `category`, `internalCategory`, and `name` values are substring matches and are combined with OR.
+        - Multiple `notes`, `components`, and `tags` values require all provided values to be present.
+        - Boolean `has-*` filters check whether the respective field is present or absent.
       operationId: getMealsByDateAndCanteen
       parameters:
         - name: date
@@ -379,17 +505,62 @@ paths:
         - name: id
           in: query
           description: Filter by meal ID (can be repeated)
-          schema:
-            type: array
-            items:
-              type: integer
+          schema: { type: array, items: { type: integer } }
         - name: category
           in: query
-          description: Filter by meal category (e.g., "Essen", "Beilage")
-          schema:
-            type: array
-            items:
-              type: string
+          description: Filter by meal category (can be repeated)
+          schema: { type: array, items: { type: string } }
+        - name: internalCategory
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: name
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: price-student-min
+          in: query
+          schema: { type: number }
+        - name: price-student-max
+          in: query
+          schema: { type: number }
+        - name: price-employees-min
+          in: query
+          schema: { type: number }
+        - name: price-employees-max
+          in: query
+          schema: { type: number }
+        - name: price-pupils-min
+          in: query
+          schema: { type: number }
+        - name: price-pupils-max
+          in: query
+          schema: { type: number }
+        - name: price-others-min
+          in: query
+          schema: { type: number }
+        - name: price-others-max
+          in: query
+          schema: { type: number }
+        - name: notes
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: components
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: tags
+          in: query
+          schema: { type: array, items: { type: string } }
+        - name: has-internal-category
+          in: query
+          schema: { type: boolean }
+        - name: has-notes
+          in: query
+          schema: { type: boolean }
+        - name: has-components
+          in: query
+          schema: { type: boolean }
+        - name: has-tags
+          in: query
+          schema: { type: boolean }
       responses:
         "200":
           description: List of meals for the given date and canteen.

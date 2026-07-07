@@ -109,29 +109,93 @@ function toDateString(date) {
     return date.toISOString().split('T')[0];
 }
 
+/**
+ * @param {string} date
+ * @returns {{start: string, end: string}}
+ */
+function weekRange(date) {
+    const day = new Date(date);
+    const diff = day.getUTCDay() === 0 ? -6 : 1 - day.getUTCDay();
+    const start = new Date(Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + diff));
+    const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + 6));
+    return { start: toDateString(start), end: toDateString(end) };
+}
+
+/**
+ * @param {any} value
+ * @returns {boolean|null}
+ */
+function boolParam(value) {
+    if (value === undefined) return null;
+    if (value === false || value === 'false' || value === '0') return false;
+    return true;
+}
+
+/**
+ * @param {any} query
+ * @param {{includeDate?: boolean, includeCanteenId?: boolean}} options
+ */
+function mealFilters(query, options = {}) {
+    const filters = {
+        ids: asArray(query.id).map(Number).filter(Number.isFinite),
+        date: options.includeDate === false ? [] : asArray(query.date).filter(Boolean),
+        dateStart: options.includeDate === false ? null : query['date-start'] ?? null,
+        dateEnd: options.includeDate === false ? null : query['date-end'] ?? null,
+        canteenIds: options.includeCanteenId === false ? [] : asArray(query.canteenId).map(Number).filter(Number.isFinite),
+        categories: asArray(query.category).filter(Boolean),
+        internalCategories: asArray(query.internalCategory).filter(Boolean),
+        names: asArray(query.name).filter(Boolean),
+        priceStudentMin: query['price-student-min'] == null ? null : Number(query['price-student-min']),
+        priceStudentMax: query['price-student-max'] == null ? null : Number(query['price-student-max']),
+        priceEmployeesMin: query['price-employees-min'] == null ? null : Number(query['price-employees-min']),
+        priceEmployeesMax: query['price-employees-max'] == null ? null : Number(query['price-employees-max']),
+        pricePupilsMin: query['price-pupils-min'] == null ? null : Number(query['price-pupils-min']),
+        pricePupilsMax: query['price-pupils-max'] == null ? null : Number(query['price-pupils-max']),
+        priceOthersMin: query['price-others-min'] == null ? null : Number(query['price-others-min']),
+        priceOthersMax: query['price-others-max'] == null ? null : Number(query['price-others-max']),
+        notes: asArray(query.notes).filter(Boolean),
+        components: asArray(query.components).filter(Boolean),
+        tags: asArray(query.tags).filter(Boolean),
+        hasInternalCategory: boolParam(query['has-internal-category']),
+        hasNotes: boolParam(query['has-notes']),
+        hasComponents: boolParam(query['has-components']),
+        hasTags: boolParam(query['has-tags'])
+    };
+    if (options.includeDate !== false) {
+        if (query.today !== undefined) filters.date = [toDateString(new Date())];
+        if (query.next !== undefined) {
+            const next = new Date();
+            next.setUTCDate(next.getUTCDate() + 1);
+            filters.date = [toDateString(next)];
+        }
+        if (query['date-offset'] !== undefined) {
+            const offset = new Date();
+            offset.setUTCDate(offset.getUTCDate() + Number(query['date-offset']));
+            filters.date = [toDateString(offset)];
+        }
+        if (query.week !== undefined || query['week-next'] !== undefined || query['week-date'] !== undefined) {
+            const base = new Date(query['week-date'] ?? Date.now());
+            if (query['week-next'] !== undefined) base.setUTCDate(base.getUTCDate() + 7);
+            const range = weekRange(toDateString(base));
+            filters.date = [];
+            filters.dateStart = range.start;
+            filters.dateEnd = range.end;
+        }
+    }
+    return filters;
+}
+
 /** Returns all meals, optionally filtered by query parameters. */
 fastify.get('/meals', async (request, reply) => {
     const query = /** @type {any} */ (request.query);
-    const today = query.today !== undefined;
-    return getMeals(null, null, null, {
-        ids: asArray(query.id).map(Number).filter(Number.isFinite),
-        date: today ? [toDateString(new Date())] : asArray(query.date) ?? null,
-        dateStart: query['date-start'] ?? null,
-        dateEnd: query['date-end'] ?? null,
-        canteenIds: asArray(query.canteenId).map(Number).filter(Number.isFinite),
-        categories: asArray(query.category).filter(v => v !== '')
-    });
+    return getMeals(null, null, null, mealFilters(query));
 });
 
 /** Returns all meals for the given date. */
 fastify.get('/meals/:date', async (request, reply) => {
     const query = /** @type {any} */ (request.query);
     const { date } = /** @type {ParamsDate} */ (request.params);
-    const meals = getMeals(date, null, null, {
-        ids: asArray(query.id).map(Number).filter(Number.isFinite),
-        canteenIds: asArray(query.canteenId).map(Number).filter(Number.isFinite),
-        categories: asArray(query.category).filter(v => v !== '')
-    });
+    const meals = getMeals(date, null, null, mealFilters(query, { includeDate: false }));
     if (meals.length === 0) {
         reply.code(404).send({ error: 'Not found' });
         return;
@@ -143,10 +207,7 @@ fastify.get('/meals/:date', async (request, reply) => {
 fastify.get('/meals/:date/:canteenId', async (request, reply) => {
     const query = /** @type {any} */ (request.query);
     const { date, canteenId } = /** @type {ParamsDateCanteen} */ (request.params);
-    const meals = getMeals(date, Number(canteenId), null, {
-        ids: asArray(query.id).map(Number).filter(Number.isFinite),
-        categories: asArray(query.category).filter(v => v !== '')
-    });
+    const meals = getMeals(date, Number(canteenId), null, mealFilters(query, { includeDate: false, includeCanteenId: false }));
     if (meals.length === 0) {
         reply.code(404).send({ error: 'Not found' });
         return;
