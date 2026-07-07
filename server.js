@@ -5,6 +5,8 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import fastifySSE from '@fastify/sse';
 import fastifyStatic from '@fastify/static';
+import fastifyETag from '@fastify/etag';
+import fastifyCompress from '@fastify/compress';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -32,6 +34,16 @@ await fastify.register(cors, {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
 });
 await fastify.register(fastifySSE);
+await fastify.register(fastifyETag, {
+    weak: false,
+    algorithm: 'sha256',
+    replyWith304: true
+});
+await fastify.register(
+    fastifyCompress, { 
+        global: true 
+    }
+)
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 await fastify.register(fastifyStatic, {
