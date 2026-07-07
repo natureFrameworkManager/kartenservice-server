@@ -145,6 +145,17 @@ function round2(value) {
 }
 
 /**
+ * Rounds a number to at most 2 decimal places, but only if it's a finite number.
+ * Returns 0 for NaN/Infinity.
+ * @param {number} value - The value to round.
+ * @returns {number}
+ */
+function safeRound2(value) {
+    if (typeof value !== 'number' || !isFinite(value)) return 0;
+    return Math.round(value * 100) / 100;
+}
+
+/**
  * Returns the ISO date string (YYYY-MM-DD) for a given timestamp.
  * @param {number} ts - Unix timestamp in milliseconds.
  * @returns {string}
@@ -323,42 +334,42 @@ function createEmptySubStatsWithMax() {
  */
 function aggregateToSubStats(target, amount, ts, kaName, category) {
     const dateStr = tsToDateStr(ts);
-    target.total += amount;
+    target.total = round2(target.total + amount);
 
     // Days
-    target.days[dateStr] = (target.days[dateStr] || 0) + amount;
+    target.days[dateStr] = round2((target.days[dateStr] || 0) + amount);
     // Weeks (Monday anchor)
     const weekKey = getMonday(dateStr);
-    target.weeks[weekKey] = (target.weeks[weekKey] || 0) + amount;
+    target.weeks[weekKey] = round2((target.weeks[weekKey] || 0) + amount);
     // Months
     const monthKey = dateStr.slice(0, 7);
-    target.months[monthKey] = (target.months[monthKey] || 0) + amount;
+    target.months[monthKey] = round2((target.months[monthKey] || 0) + amount);
     // Years
     const yearKey = dateStr.slice(0, 4);
-    target.years[yearKey] = (target.years[yearKey] || 0) + amount;
+    target.years[yearKey] = round2((target.years[yearKey] || 0) + amount);
     // Semesters
     const semKey = getSemester(dateStr);
-    target.semesters[semKey] = (target.semesters[semKey] || 0) + amount;
+    target.semesters[semKey] = round2((target.semesters[semKey] || 0) + amount);
     // Weekdays
     const wd = getWeekday(dateStr);
-    target.weekdays[wd] = (target.weekdays[wd] || 0) + amount;
+    target.weekdays[wd] = round2((target.weekdays[wd] || 0) + amount);
     // Time slots (15 min)
     const slot = getTimeSlot(ts);
-    target.time[slot] = (target.time[slot] || 0) + amount;
+    target.time[slot] = round2((target.time[slot] || 0) + amount);
     // Time by weekday
     if (!target['time-by-weekday'][wd][slot]) {
         target['time-by-weekday'][wd][slot] = 0;
     }
-    target['time-by-weekday'][wd][slot] += amount;
+    target['time-by-weekday'][wd][slot] = round2(target['time-by-weekday'][wd][slot] + amount);
     // Categories
     if (category) {
-        target.categories[category] = (target.categories[category] || 0) + amount;
+        target.categories[category] = round2((target.categories[category] || 0) + amount);
     }
     // Canteens — keyed by kaName (POS register name, includes canteen and register number)
     if (kaName) {
-        target.canteens[kaName] = (target.canteens[kaName] || 0) + amount;
+        target.canteens[kaName] = round2((target.canteens[kaName] || 0) + amount);
         // Register — same key as canteens (kaName identifies the specific register)
-        target.register[kaName] = (target.register[kaName] || 0) + amount;
+        target.register[kaName] = round2((target.register[kaName] || 0) + amount);
     }
 }
 
@@ -520,6 +531,10 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
     const allVisitDates = new Set();
     /** @type {{ [key: string]: Set<string> }} */
     const visitDatesByCanteen = {};
+    /** @type {{ [date: string]: number }} */
+    const visitTsByDate = {};
+    /** @type {{ [kaName: string]: { [date: string]: number } }} */
+    const visitTsByDateByCanteen = {};
 
     const foodTypesList = ['drinks', 'meals', 'desserts', 'snacks', 'other'];
     /** @type {{ [key: string]: SubStats }} */
@@ -553,8 +568,7 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
             const absAmount = Math.abs(amount);
             totalSpendCount++;
 
-            // Spend amounts (with max-per-transaction)
-            spendAmounts.total += absAmount;
+            // Track max-per-transaction (aggregateToSubStats handles total + all dimension buckets)
             if (absAmount > (spendAmounts['max-per-transaction'] || 0)) {
                 spendAmounts['max-per-transaction'] = absAmount;
             }
@@ -563,12 +577,21 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
             // Spend counts
             aggregateToSubStats(spendCounts, 1, ts, kaName, '');
 
-            // Track unique visit days (per canteen)
+            // Track unique visit days (per canteen) and the first transaction timestamp for time-slot computation
             allVisitDates.add(dateStr);
+            if (!visitTsByDate[dateStr]) {
+                visitTsByDate[dateStr] = ts;
+            }
             if (!visitDatesByCanteen[kaName]) {
                 visitDatesByCanteen[kaName] = new Set();
             }
             visitDatesByCanteen[kaName].add(dateStr);
+            if (!visitTsByDateByCanteen[kaName]) {
+                visitTsByDateByCanteen[kaName] = {};
+            }
+            if (!visitTsByDateByCanteen[kaName][dateStr]) {
+                visitTsByDateByCanteen[kaName][dateStr] = ts;
+            }
 
             // Food type classification from positions
             for (const pos of positions) {
@@ -576,7 +599,7 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
                 if (pos.epreis > 0 && pos.gpreis > 0) {
                     const posAmount = pos.gpreis;
                     const ftTarget = foodTypeAmounts[foodType];
-                    ftTarget.total += posAmount;
+                    // Track max-per-transaction (aggregateToSubStats handles total + all dimension buckets)
                     if (posAmount > (ftTarget['max-per-transaction'] || 0)) {
                         ftTarget['max-per-transaction'] = posAmount;
                     }
@@ -588,7 +611,7 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
 
         if (isTopUp) {
             totalTopUpCount++;
-            topUpAmounts.total += amount;
+            // Track max-per-transaction (aggregateToSubStats handles total + all dimension buckets)
             if (amount > (topUpAmounts['max-per-transaction'] || 0)) {
                 topUpAmounts['max-per-transaction'] = amount;
             }
@@ -599,7 +622,7 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
         // Count every transaction (both spend and top-up)
         totalTransCount++;
         const absAmount = Math.abs(amount);
-        transactionAmounts.total += absAmount;
+        // Track max-per-transaction (aggregateToSubStats handles total + all dimension buckets)
         if (absAmount > (transactionAmounts['max-per-transaction'] || 0)) {
             transactionAmounts['max-per-transaction'] = absAmount;
         }
@@ -612,11 +635,19 @@ export function computeCardStats(cardnumber, dateStart, dateEnd, locationIds) {
     const visitsCounts = createEmptySubStats();
     const visitsAverages = createEmptySubStats();
     for (const d of sortedVisitDates) {
-        aggregateToSubStats(visitsCounts, 1, new Date(d).getTime(), '', '');
-        aggregateToSubStats(visitsAverages, 1, new Date(d).getTime(), '', '');
+        // Use the actual first transaction timestamp for proper time-slot computation
+        const visitTs = visitTsByDate[d] || new Date(d).getTime();
+        aggregateToSubStats(visitsCounts, 1, visitTs, '', '');
     }
     visitsCounts.total = sortedVisitDates.length;
     visitsAverages.total = sortedVisitDates.length;
+
+    // Populate visits-counts per canteen/register directly (just counts, not dimensions)
+    for (const [kaName, dateSet] of Object.entries(visitDatesByCanteen)) {
+        const count = dateSet.size;
+        visitsCounts.canteens[kaName] = count;
+        visitsCounts.register[kaName] = count;
+    }
 
     // ── Visit streaks ───────────────────────────────────────────────────────
     const closedDates = new Set(); // could be extended with actual closed-day data
