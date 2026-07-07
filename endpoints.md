@@ -88,7 +88,7 @@
 ?rabatt-min
 ?rabatt-max
 ?bewertung -- multiple
-/card/{cardnumber}/stats
+/card/{cardnumber}/stats -> file: [stats-data.md](./stats-data.md)
 ?date-start
 ?date-end
 ?location-id -- multiple
