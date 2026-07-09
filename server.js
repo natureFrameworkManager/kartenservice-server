@@ -49,13 +49,176 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 await fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'docs'),
     prefix: '/docs',
-    index: 'index.html'
+    index: 'index.html',
+    setHeaders: (res, filePath, stat) => {
+        // Last-Modified is set automatically by @fastify/send via stat.mtime
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        res.setHeader('CDN-Cache-Control', 'public, max-age=604800');
+        res.setHeader('Surrogate-Control', 'public, max-age=604800');
+    }
 });
 await fastify.register(fastifyStatic, {
     root: path.join(__dirname, 'ui'),
     prefix: '/ui',
     index: 'index.html',
-    decorateReply: false
+    decorateReply: false,
+    setHeaders: (res, filePath, stat) => {
+        // Last-Modified is set automatically by @fastify/send via stat.mtime
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        res.setHeader('CDN-Cache-Control', 'public, max-age=604800');
+        res.setHeader('Surrogate-Control', 'public, max-age=604800');
+    }
+});
+
+/**
+ * Returns today's date as a YYYY-MM-DD string.
+ * @returns {string}
+ */
+function todayDateString() {
+    return toDateString(new Date());
+}
+
+/**
+ * Global onSend hook that sets caching headers based on the endpoint group.
+ * Works in concert with the CDN (Cloudflare) and API gateway (APISIX).
+ */
+fastify.addHook('onSend', async (request, reply, payload) => {
+    const url = request.url;
+    const method = request.method;
+
+    // Never cache mutating requests or error responses
+    if (method !== 'GET' || reply.statusCode >= 400) {
+        reply.header('Cache-Control', 'no-store');
+        return payload;
+    }
+
+    // SSE streams must not be cached
+    if (url.includes('/sse')) {
+        reply.header('Cache-Control', 'no-store');
+        reply.header('X-Accel-Buffering', 'no');
+        return payload;
+    }
+
+    // Static files under /docs and /ui are handled by fastifyStatic setHeaders
+    if (url.startsWith('/docs') || url.startsWith('/ui')) {
+        return payload;
+    }
+
+    // /locations — rarely changes, cache aggressively
+    if (url.startsWith('/locations')) {
+        reply.header('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+        reply.header('CDN-Cache-Control', 'public, max-age=86400');
+        reply.header('Surrogate-Control', 'public, max-age=86400');
+        reply.header('Vary', 'Accept-Encoding');
+        return payload;
+    }
+
+    // /meals — changes daily around midday; past dates rarely change
+    if (url.startsWith('/meals')) {
+        const today = todayDateString();
+
+        /**
+         * Heuristic: determine if this request targets only past dates.
+         * Checks URL path date, query date, date-offset, date-start/date-end, week-date.
+         * Returns 'past' if all dates are before today, 'today' if only today, 'mixed' otherwise.
+         * @returns {'past' | 'today' | 'mixed'}
+         */
+        function mealDateScope() {
+            // 1. Date in URL path: /meals/2025-01-15/...
+            const pathMatch = url.match(/^\/meals\/(\d{4}-\d{2}-\d{2})/);
+            if (pathMatch) {
+                return pathMatch[1] < today ? 'past' : (pathMatch[1] === today ? 'today' : 'mixed');
+            }
+
+            const q = /** @type {any} */ (request.query);
+
+            // 2. Explicit ?date= query params
+            const dates = asArray(q.date).filter(Boolean);
+            if (dates.length > 0) {
+                const allPast = dates.every(d => d < today);
+                const anyToday = dates.some(d => d === today);
+                if (allPast && !anyToday) return 'past';
+                if (dates.every(d => d === today)) return 'today';
+                return 'mixed';
+            }
+
+            // 3. ?today flag
+            if (q.today !== undefined) return 'today';
+
+            // 4. ?date-offset=N
+            if (q['date-offset'] !== undefined) {
+                const offset = Number(q['date-offset']);
+                const target = new Date();
+                target.setUTCDate(target.getUTCDate() + offset);
+                const targetStr = toDateString(target);
+                return targetStr < today ? 'past' : (targetStr === today ? 'today' : 'mixed');
+            }
+
+            // 5. ?date-start and ?date-end range
+            const dateStart = q['date-start'];
+            const dateEnd = q['date-end'];
+            if (dateStart || dateEnd) {
+                if (dateEnd && dateEnd < today) return 'past';
+                if (dateStart && dateStart < today && (!dateEnd || dateEnd === dateStart)) return 'past';
+                if (dateStart && dateStart > today) return 'mixed';
+                return 'mixed';
+            }
+
+            // 6. ?week with optional ?week-date
+            if (q.week !== undefined || q['week-next'] !== undefined) {
+                const base = new Date(q['week-date'] ?? Date.now());
+                if (q['week-next'] !== undefined) base.setUTCDate(base.getUTCDate() + 7);
+                const range = weekRange(toDateString(base));
+                if (range.end < today) return 'past';
+                if (range.start <= today && range.end >= today) return 'mixed';
+                return 'mixed';
+            }
+
+            // No narrowing hints — default conservative
+            return 'mixed';
+        }
+
+        const scope = mealDateScope();
+        if (scope === 'past') {
+            reply.header('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+            reply.header('CDN-Cache-Control', 'public, max-age=604800');
+            reply.header('Surrogate-Control', 'public, max-age=604800');
+        } else if (scope === 'today') {
+            reply.header('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
+            reply.header('CDN-Cache-Control', 'public, max-age=1800');
+            reply.header('Surrogate-Control', 'public, max-age=1800');
+        } else {
+            // Mixed or uncertain — conservative short cache
+            reply.header('Cache-Control', 'public, max-age=300, s-maxage=1800, stale-while-revalidate=3600');
+            reply.header('CDN-Cache-Control', 'public, max-age=1800');
+            reply.header('Surrogate-Control', 'public, max-age=1800');
+        }
+        reply.header('Vary', 'Accept-Encoding');
+        return payload;
+    }
+
+    // /trans and /transpos — user-specific, changes throughout the day
+    if (url.startsWith('/trans')) {
+        reply.header('Cache-Control', 'private, max-age=60, s-maxage=0');
+        reply.header('CDN-Cache-Control', 'private, no-cache');
+        reply.header('Surrogate-Control', 'private, no-cache');
+        reply.header('Vary', 'Authorization, Accept-Encoding');
+        return payload;
+    }
+
+    // /card/:cardNumber/stats — changes in relation to transactions
+    if (url.includes('/stats')) {
+        reply.header('Cache-Control', 'private, max-age=120, s-maxage=0');
+        reply.header('CDN-Cache-Control', 'private, no-cache');
+        reply.header('Surrogate-Control', 'private, no-cache');
+        reply.header('Vary', 'Authorization, Accept-Encoding');
+        return payload;
+    }
+
+    // Default for any other GET endpoint
+    reply.header('Cache-Control', 'public, max-age=300, s-maxage=3600');
+    reply.header('Vary', 'Accept-Encoding');
+    return payload;
 });
 
 /**
