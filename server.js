@@ -69,6 +69,17 @@ await fastify.register(fastifyStatic, {
         res.setHeader('Surrogate-Control', 'public, max-age=604800');
     }
 });
+await fastify.register(fastifyStatic, {
+    root: path.join(__dirname, 'stats'),
+    prefix: '/stats',
+    index: 'index.html',
+    decorateReply: false,
+    setHeaders: (res, filePath, stat) => {
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400');
+        res.setHeader('CDN-Cache-Control', 'public, max-age=604800');
+        res.setHeader('Surrogate-Control', 'public, max-age=604800');
+    }
+});
 
 /**
  * Returns today's date as a YYYY-MM-DD string.
@@ -99,8 +110,8 @@ fastify.addHook('onSend', async (request, reply, payload) => {
         return payload;
     }
 
-    // Static files under /docs and /ui are handled by fastifyStatic setHeaders
-    if (url.startsWith('/docs') || url.startsWith('/ui')) {
+    // Static files under /docs, /ui and /stats are handled by fastifyStatic setHeaders
+    if (url.startsWith('/docs') || url.startsWith('/ui') || url.startsWith('/stats')) {
         return payload;
     }
 
