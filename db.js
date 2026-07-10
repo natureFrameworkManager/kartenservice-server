@@ -1105,3 +1105,30 @@ export function getTransPosForStats(cardnumber, dateStart, dateEnd, locationIds)
         bewertung: r.bewertung
     }));
 }
+
+/**
+ *
+ * @param {string} cardnumber - The card number to filter by.
+ * @param {string|null} dateStart - ISO date string (inclusive lower bound), or null.
+ * @param {string|null} dateEnd - ISO date string (inclusive upper bound), or null.
+ * @param {number[]|null} locationIds - Array of mensa_locations ids, or null for all.
+ * @returns {{id: number, mensa_location_id: number, locationName: string, locationInternalName: string|null, locationOpenMensaId: number|null, locationMensaXMLId: number|null, date: Date, name: string, category: string, internalCategory: string|null, prices: {students: number|null, employees: number|null, others: number|null, pupils: number|null}|null, notes: string[]|null, components: string[]|null, tags: string[]|null}[]}
+ */
+export function getTransMealsForStats(cardnumber, dateStart, dateEnd, locationIds) {
+    if (dateStart) {
+        const start = new Date(dateStart);
+    }
+    if (dateEnd) {
+        const end = new Date(dateEnd);
+    }
+    const meals = getCardMeals(cardnumber);
+    meals.filter(m => {
+        const mealDate = m.date;
+        const locationId = m.mensa_location_id;
+        if (dateStart && mealDate < new Date(dateStart)) return false;
+        if (dateEnd && mealDate > new Date(dateEnd)) return false;
+        if (locationIds && locationIds.length > 0 && !locationIds.includes(locationId)) return false;
+        return true;
+    });
+    return meals;
+}
